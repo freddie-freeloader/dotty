@@ -1,0 +1,149 @@
+sidebar:
+    - title: Blog
+      url: blog/index.html
+    - title: Usage
+      subsection:
+        - title: Getting Started
+          url: docs/usage/getting-started.html
+        - title: sbt-projects
+          url: docs/usage/sbt-projects.html
+        - title: IDE support for Dotty
+          url: docs/usage/ide-support.html
+        - title: cbt-projects
+          url: docs/usage/cbt-projects.html
+        - title: Dottydoc
+          url: docs/usage/dottydoc.html
+    - title: Reference
+      subsection:
+        - title: Overview
+          url: docs/reference/overview.html
+        - title: New Types
+          subsection:
+            - title: Intersection types
+              url: docs/reference/intersection-types.html
+            - title: Union types
+              url: docs/reference/union-types.html
+            - title: Type lambdas
+              url: docs/reference/type-lambdas.html
+            - title: Match types
+              url: docs/reference/match-types.html
+            - title: Implicit Function Types
+              url: docs/reference/implicit-function-types.html
+            - title: Dependent Function Types
+              url: docs/reference/dependent-function-types.html
+        - title: Enums
+          subsection:
+            - title: Enumerations
+              url: docs/reference/enums/enums.html
+            - title: Algebraic Data Types
+              url: docs/reference/enums/adts.html
+            - title: Translation
+              url: docs/reference/enums/desugarEnums.html
+        - title: Other New Features
+          subsection:
+            - title: Multiversal Equality
+              url: docs/reference/multiversal-equality.html
+            - title: Trait Parameters
+              url: docs/reference/trait-parameters.html
+            - title: Inlining by Rewriting
+              url: docs/reference/inline.html
+            - title: Meta Programming
+              url: docs/reference/principled-meta-programming.html
+            - title: By-Name Implicits
+              url: docs/reference/implicit-by-name-parameters.html
+            - title: Auto Parameter Tupling
+              url: docs/reference/auto-parameter-tupling.html
+            - title: Named Type Arguments
+              url: docs/reference/named-typeargs.html
+            - title: Erased Terms
+              url: docs/reference/erased-terms.html
+            - title: Kind Polymorphism
+              url: docs/reference/kind-polymorphism.html
+        - title: Changed Features
+          subsection:
+            - title: Volatile Lazy Vals
+              url: docs/reference/changed/lazy-vals.html
+            - title: Structural Types
+              url: docs/reference/changed/structural-types.html
+            - title: Type Checking
+              url: docs/reference/changed/type-checking.html
+            - title: Type Inference
+              url: docs/reference/changed/type-inference.html
+            - title: Implicit Resolution
+              url: docs/reference/changed/implicit-resolution.html
+            - title: Implicit Conversions
+              url: docs/reference/changed/implicit-conversions.html
+            - title: Vararg Patterns
+              url: docs/reference/changed/vararg-patterns.html
+            - title: Pattern matching
+              url: docs/reference/changed/pattern-matching.html
+            - title: Eta Expansion
+              url: docs/reference/changed/eta-expansion.html
+            - title: Compiler Plugins
+              url: docs/reference/changed/compiler-plugins.html
+        - title: Dropped Features
+          subsection:
+            - title: DelayedInit
+              url: docs/reference/dropped/delayed-init.html
+            - title: Macros
+              url: docs/reference/dropped/macros.html
+            - title: Existential Types
+              url: docs/reference/dropped/existential-types.html
+            - title: Type Projection
+              url: docs/reference/dropped/type-projection.html
+            - title: Procedure Syntax
+              url: docs/reference/dropped/procedure-syntax.html
+            - title: Early Initializers
+              url: docs/reference/dropped/early-initializers.html
+            - title: Class Shadowing
+              url: docs/reference/dropped/class-shadowing.html
+            - title: Limit 22
+              url: docs/reference/dropped/limit22.html
+            - title: XML literals
+              url: docs/reference/dropped/xml.html
+            - title: Auto-Application
+              url: docs/reference/dropped/auto-apply.html
+            - title: Weak Conformance
+              url: docs/reference/dropped/weak-conformance.html
+    - title: Contributing
+      subsection:
+        - title: Getting Started
+          url: docs/contributing/getting-started.html
+        - title: Workflow
+          url: docs/contributing/workflow.html
+        - title: Eclipse
+          url: docs/contributing/eclipse.html
+        - title: IntelliJ IDEA
+          url: docs/contributing/intellij-idea.html
+        - title: Testing
+          url: docs/contributing/testing.html
+        - title: Working with the Backend
+          url: docs/contributing/backend.html
+    - title: Internals
+      subsection:
+        - title: Backend
+          url: docs/internals/backend.html
+        - title: Classpaths
+          url: docs/internals/classpaths.html
+        - title: Core Data Structrues
+          url: docs/internals/core-data-structures.html
+        - title: Contexts
+          url: docs/internals/contexts.html
+        - title: Dotc vs Scalac
+          url: docs/internals/dotc-scalac.html
+        - title: Higher-Kinded Types
+          url: docs/internals/higher-kinded-v2.html
+        - title: Overall Structure
+          url: docs/internals/overall-structure.html
+        - title: Periods
+          url: docs/internals/periods.html
+        - title: Syntax
+          url: docs/internals/syntax.html
+        - title: Type System
+          url: docs/internals/type-system.html
+        - title: "Dotty Internals 1: Trees & Symbols (Meeting Notes)"
+          url: docs/internals/dotty-internals-1-notes.html
+    - title: Resources
+      subsection:
+        - title: Talks
+          url: docs/resources/talks.html
