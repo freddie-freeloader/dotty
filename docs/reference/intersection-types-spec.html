@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <meta http-equiv="x-ua-compatible" content="ie=edge">
 
-        <title>Intersection Types</title>
+        <title>Intersection Types - More Details</title>
 
         <link rel="icon" type="image/png" href="../.././images/favicon.png">
 
@@ -12230,59 +12230,88 @@
 
 
     <div id="content-body" class="doc-page-body">
-        <h1 id="doc-page-title">Intersection Types</h1>
-        <a id="edit-on-github" href="https://github.com/lampepfl/dotty/edit/master/docs/docs/reference/intersection-types.md">
+        <h1 id="doc-page-title">Intersection Types - More Details</h1>
+        <a id="edit-on-github" href="https://github.com/lampepfl/dotty/edit/master/docs/docs/reference/intersection-types-spec.md">
             Edit this page on GitHub
         </a>
         <hr/>
         <div id="doc-page-container">
-            <p>Used on types, the <code>&amp;</code> operator creates an intersection type.</p>
-<h2><a href="#type-checking" id="type-checking">Type Checking</a></h2>
-<p>The type <code>S &amp; T</code> represents values that are of the type <code>S</code> and <code>T</code> at the same time.</p>
-<pre><code class="language-scala">trait Resettable {
-  def reset(): this.type
-}
-trait Growable[T] {
-  def add(x: T): this.type
-}
-def f(x: Resettable &amp; Growable[String]) = {
-  x.reset()
-  x.add(&quot;first&quot;)
-}
+            <h2><a href="#syntax" id="syntax">Syntax</a></h2>
+<p>Syntactically, an intersection type <code>S &amp; T</code> is similar to an infix type, where
+the infix operator is <code>&amp;</code>. <code>&amp;</code> is treated as a soft keyword. That is, it is a
+normal identifier with the usual precedence. But a type of the form <code>A &amp; B</code> is
+always recognized as an intersection type, without trying to resolve <code>&amp;</code>.</p>
+<pre><code>Type              ::=  ...| InfixType
+InfixType         ::=  RefinedType {id [nl] RefinedType}
 </code></pre>
-<p>The value <code>x</code> is required to be <em>both</em> a <code>Resettable</code> and a
-<code>Growable[String]</code>.</p>
-<p>The members of an intersection type <code>A &amp; B</code> are all the members of <code>A</code> and all
-the members of <code>B</code>.  For instance <code>Resettable &amp; Growable[String]</code>
-has member methods <code>reset</code> and <code>add</code>.</p>
-<p>If a member appears in both <code>A</code> and <code>B</code>, its type in <code>A &amp; B</code> is the intersection
-of its type in <code>A</code> and its type in <code>B</code>. For instance, assume the definitions:</p>
-<pre><code class="language-scala">trait A {
-  def children: List[A]
-}
-trait B {
-  def children: List[B]
-}
-val x: A &amp; B = new C
-val ys: List[A &amp; B] = x.children
+<h2><a href="#subtyping-rules" id="subtyping-rules">Subtyping Rules</a></h2>
+<pre><code>T &lt;: A    T &lt;: B
+----------------
+  T &lt;: A &amp; B
+
+    A &lt;: T
+----------------
+    A &amp; B &lt;: T
+
+    B &lt;: T
+----------------
+    A &amp; B &lt;: T
 </code></pre>
-<p>The type of <code>children</code> in <code>A &amp; B</code> is the intersection of <code>children</code>'s
-type in <code>A</code> and its type in <code>B</code>, which is <code>List[A] &amp; List[B]</code>. This
-can be further simplified to <code>List[A &amp; B]</code> because <code>List</code> is
-covariant.</p>
-<p>One might wonder how the compiler could come up with a definition for
-<code>children</code> of type <code>List[A &amp; B]</code> since all its is given are <code>children</code>
-definitions of type <code>List[A]</code> and <code>List[B]</code>. The answer is it does not
-need to. <code>A &amp; B</code> is just a type that represents a set of requirements for
-values of the type. At the point where a value is <em>constructed</em>, one
-must make sure that all inherited members are correctly defined.
-So if one defines a class <code>C</code> that inherits <code>A</code> and <code>B</code>, one needs
-to give at that point a definition of a <code>children</code> method with the required type.</p>
-<pre><code class="language-scala">class C extends A with B {
-  def children: List[A &amp; B] = ???
-}
+<p>From the rules above, we can show that <code>&amp;</code> is <em>commutative</em>: <code>A &amp; B &lt;: B &amp; A</code> for any type <code>A</code> and <code>B</code>.</p>
+<pre><code>   B &lt;: B           A &lt;: A
+----------       -----------
+A &amp; B &lt;: B       A &amp; B &lt;: A
+---------------------------
+       A &amp; B  &lt;:  B &amp; A
 </code></pre>
-<p><a href="./type-lambdas-spec.html">More details</a></p>
+<p>In another word, <code>A &amp; B</code> is the same type as <code>B &amp; A</code>, in the sense that the two types
+have the same values and are subtypes of each other.</p>
+<p>If <code>C</code> is a type constructor, the join <code>C[A] &amp; C[B]</code> is simplified by pulling the
+intersection inside the constructor, using the following two rules:</p>
+<ul>
+<li>If <code>C</code> is covariant, <code>C[A] &amp; C[B] ~&gt; C[A &amp; B]</code></li>
+<li>If <code>C</code> is contravariant, <code>C[A] &amp; C[B] ~&gt; C[A | B]</code></li>
+</ul>
+<p>When <code>C</code> is covariant, <code>C[A &amp; B] &lt;: C[A] &amp; C[B]</code> can be derived:</p>
+<pre><code>    A &lt;: A                  B &lt;: B
+  ----------               ---------
+  A &amp; B &lt;: A               A &amp; B &lt; B
+---------------         -----------------
+C[A &amp; B] &lt;: C[A]          C[A &amp; B] &lt;: C[B]
+------------------------------------------
+      C[A &amp; B] &lt;: C[A] &amp; C[B]
+</code></pre>
+<p>When <code>C</code> is contravariant, <code>C[A | B] &lt;: C[A] &amp; C[B]</code> can be derived:</p>
+<pre><code>    A &lt;: A                        B &lt;: B
+  ----------                     ---------
+  A &lt;: A | B                     B &lt; A | B
+-------------------           ----------------
+C[A | B] &lt;: C[A]              C[A | B] &lt;: C[B]
+--------------------------------------------------
+            C[A | B] &lt;: C[A] &amp; C[B]
+</code></pre>
+<h2><a href="#erasure" id="erasure">Erasure</a></h2>
+<p>The erased type for <code>S &amp; T</code> is the erased <em>glb</em> (greatest lower bound) of the
+erased type of <code>S</code> and <code>T</code>. The rules for erasure of intersection types are given
+below in pseudocode:</p>
+<pre><code>|S &amp; T| = glb(|S|, |T|)
+
+glb(JArray(A), JArray(B)) =    JArray(glb(A, B))
+glb(JArray(T), _)         =    JArray(T)
+glb(_, JArray(T))         =    JArray(T)
+glb(A, B)                 =    A                     if A extends B
+glb(A, B)                 =    B                     if B extends A
+glb(A, _)                 =    A                     if A is not a trait
+glb(_, B)                 =    B                     if B is not a trait
+glb(A, _)                 =    A
+</code></pre>
+<p>In the above, <code>|T|</code> means the erased type of <code>T</code>, <code>JArray</code> refers to
+the type of Java Array.</p>
+<h2><a href="#relationship-with-compound-type-with" id="relationship-with-compound-type-with">Relationship with Compound Type (<code>with</code>)</a></h2>
+<p>Intersection types <code>A &amp; B</code> replace compound types <code>A with B</code> in Scala 2. For the
+moment, the syntax <code>A with B</code> is still allowed and interpreted as <code>A &amp; B</code>, but
+its usage as a type (as opposed to in a <code>new</code> or <code>extends</code> clause) will be
+deprecated and removed in the future.</p>
 
         </div>
     </div><!-- end content-body -->
