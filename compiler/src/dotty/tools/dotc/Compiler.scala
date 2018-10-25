@@ -7,6 +7,7 @@ import typer.{FrontEnd, RefChecks}
 import Phases.Phase
 import transform._
 import dotty.tools.backend.jvm.{CollectSuperCalls, GenBCode, LabelDefs}
+import dotty.tools.dotc.escapecheck.EscapeCheck
 import dotty.tools.dotc.transform.localopt.StringInterpolatorOpt
 
 /** The central class of the dotc compiler. The job of a compiler is to create
@@ -31,7 +32,11 @@ class Compiler {
    *     plain SymDenotation, as opposed to a UniqueRefDenotation.
    */
   def phases: List[List[Phase]] =
-    frontendPhases ::: picklerPhases ::: transformPhases ::: backendPhases
+    frontendPhases :::
+    List(List(new EscapeCheck)) :::
+    picklerPhases :::
+    transformPhases :::
+    backendPhases
 
   /** Phases dealing with the frontend up to trees ready for TASTY pickling */
   protected def frontendPhases: List[List[Phase]] =

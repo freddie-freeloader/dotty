@@ -126,7 +126,7 @@ trait StandardDefinitions extends TastyCore {
       *   -  ...
       *   -  Nth element is `FunctionN`
       */
-    def FunctionClass(arity: Int, isImplicit: Boolean = false, isErased: Boolean = false): Symbol
+    def FunctionClass(arity: Int, isImplicit: Boolean = false, isErased: Boolean = false, isLocal: Boolean = false): Symbol
 
     /** Function-like object that maps arity to symbols for classes `scala.TupleX`.
       *   -  0th element is `NoSymbol`

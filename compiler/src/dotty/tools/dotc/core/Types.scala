@@ -336,6 +336,9 @@ object Types {
     /** Is this a MethodType for which the parameters will not be used */
     def isErasedMethod: Boolean = false
 
+    /** Is this a MethodType which has local parameters */
+    def isLocalMethod: Boolean = false
+
     /** Is this a match type or a higher-kinded abstraction of one?
      */
     def isMatch(implicit ctx: Context): Boolean = stripTypeVar.stripAnnots match {
@@ -1307,6 +1310,10 @@ object Types {
       case _ => Nil
     }
 
+    final def paramAnnoss(implicit ctx: Context): Set[Name] = stripPoly match {
+      case mt: MethodType => mt.paramAnnos.union(mt.resultType.paramAnnoss)
+      case _ => Set()
+    }
 
     /** The parameter types in the first parameter section of a generic type or MethodType, Empty list for others */
     final def firstParamTypes(implicit ctx: Context): List[Type] = stripPoly match {
@@ -1427,9 +1434,10 @@ object Types {
         val formals1 = if (dropLast == 0) mt.paramInfos else mt.paramInfos dropRight dropLast
         val isImplicit = mt.isImplicitMethod && !ctx.erasedTypes
         val isErased = mt.isErasedMethod && !ctx.erasedTypes
+        val isLocal = mt.isLocalMethod && !ctx.erasedTypes // TODO: Do we have to check erasedTypes?
         val funType = defn.FunctionOf(
           formals1 mapConserve (_.underlyingIfRepeated(mt.isJavaMethod)),
-          mt.nonDependentResultApprox, isImplicit, isErased)
+          mt.nonDependentResultApprox, isImplicit, isErased, isLocal)
         if (mt.isResultDependent) RefinedType(funType, nme.apply, mt)
         else funType
     }
@@ -2755,6 +2763,8 @@ object Types {
     def resType: Type
     protected def newParamRef(n: Int): ParamRefType
 
+    var paramAnnos : Set[Name] = Set()
+
     override def resultType(implicit ctx: Context): Type = resType
 
     def isResultDependent(implicit ctx: Context): Boolean
@@ -2978,8 +2988,12 @@ object Types {
     def companion: MethodTypeCompanion
 
     final override def isJavaMethod: Boolean = companion eq JavaMethodType
-    final override def isImplicitMethod: Boolean = companion.eq(ImplicitMethodType) || companion.eq(ErasedImplicitMethodType)
+    final override def isImplicitMethod: Boolean =
+      companion.eq(ImplicitMethodType) ||
+      companion.eq(ErasedImplicitMethodType) ||
+      companion.eq(LocalImplicitMethodType)
     final override def isErasedMethod: Boolean = companion.eq(ErasedMethodType) || companion.eq(ErasedImplicitMethodType)
+    final override def isLocalMethod: Boolean = companion.eq(LocalMethodType) || companion.eq(LocalImplicitMethodType)
 
     def computeSignature(implicit ctx: Context): Signature = {
       val params = if (isErasedMethod) Nil else paramInfos
@@ -3072,22 +3086,27 @@ object Types {
   }
 
   object MethodType extends MethodTypeCompanion {
-    def maker(isJava: Boolean = false, isImplicit: Boolean = false, isErased: Boolean = false): MethodTypeCompanion = {
+    def maker(isJava: Boolean = false, isImplicit: Boolean = false, isErased: Boolean = false, isLocal: Boolean = false): MethodTypeCompanion = {
       if (isJava) {
         assert(!isImplicit)
         assert(!isErased)
+        assert(!isLocal)
         JavaMethodType
       }
       else if (isImplicit && isErased) ErasedImplicitMethodType
+      else if (isImplicit && isLocal) LocalImplicitMethodType
       else if (isImplicit) ImplicitMethodType
       else if (isErased) ErasedMethodType
+      else if (isLocal) LocalMethodType
       else MethodType
     }
   }
   object JavaMethodType extends MethodTypeCompanion
   object ImplicitMethodType extends MethodTypeCompanion
   object ErasedMethodType extends MethodTypeCompanion
+  object LocalMethodType extends MethodTypeCompanion
   object ErasedImplicitMethodType extends MethodTypeCompanion
+  object LocalImplicitMethodType extends MethodTypeCompanion
 
   /** A ternary extractor for MethodType */
   object MethodTpe {
@@ -3607,7 +3626,7 @@ object Types {
 
     def caseType(tp: Type)(implicit ctx: Context): Type = tp match {
       case tp: HKTypeLambda => caseType(tp.resType)
-      case defn.FunctionOf(_, restpe, _, _) => restpe
+      case defn.FunctionOf(_, restpe, _, _, _) => restpe
     }
 
     def alternatives(implicit ctx: Context): List[Type] = cases.map(caseType)

@@ -370,6 +370,7 @@ object Checking {
       if (!ok && !sym.is(Synthetic))
         fail(i"modifier `$flag` is not allowed for this definition")
 
+    // TODO: Add something for `local` here?
     if (sym.is(Inline) &&
           (  sym.is(ParamAccessor) && sym.owner.isClass
           || sym.is(TermParam) && !sym.owner.isInlineMethod
@@ -539,6 +540,7 @@ object Checking {
               ctx.error(ValueClassParameterMayNotBeAVar(clazz, param), param.pos)
             if (param.info.isInstanceOf[ExprType])
               ctx.error(ValueClassParameterMayNotBeCallByName(clazz, param), param.pos)
+            // TODO: Something to do here with `local?
             if (param.is(Erased))
               ctx.error("value class first parameter cannot be `erased`", param.pos)
             else {

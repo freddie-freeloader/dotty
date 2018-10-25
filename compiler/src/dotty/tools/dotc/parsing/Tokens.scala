@@ -93,6 +93,8 @@ abstract class TokensCommon {
   //final val FORSOME = 61;          enter(FORSOME, "forSome") // TODO: deprecate
   //final val ENUM = 62;             enter(ENUM, "enum")
   //final val ERASED = 63;           enter(ERASED, "erased")
+  //final val LOCAL = 64;            enter(LOCAL, "local")
+  //final val SAFE = 65;             enter(SAFE, "safe")
 
   /** special symbols */
   final val COMMA = 70;            enter(COMMA, "','")
@@ -177,6 +179,8 @@ object Tokens extends TokensCommon {
   final val FORSOME = 61;          enter(FORSOME, "forSome") // TODO: deprecate
   final val ENUM = 62;             enter(ENUM, "enum")
   final val ERASED = 63;           enter(ERASED, "erased")
+  final val LOCAL = 64;            enter(LOCAL, "local")
+  final val SAFE = 65;             enter(SAFE, "safe")
 
   /** special symbols */
   final val NEWLINE = 78;          enter(NEWLINE, "end of statement", "new line")
@@ -197,7 +201,7 @@ object Tokens extends TokensCommon {
   /** XML mode */
   final val XMLSTART = 96;         enter(XMLSTART, "$XMLSTART$<") // TODO: deprecate
 
-  final val alphaKeywords: TokenSet = tokenRange(IF, ERASED)
+  final val alphaKeywords: TokenSet = tokenRange(IF, SAFE)
   final val symbolicKeywords: TokenSet = tokenRange(USCORE, VIEWBOUND)
   final val symbolicTokens: TokenSet = tokenRange(COMMA, VIEWBOUND)
   final val keywords: BitSet = alphaKeywords | symbolicKeywords
@@ -225,7 +229,7 @@ object Tokens extends TokensCommon {
   final val defIntroTokens: BitSet = templateIntroTokens | dclIntroTokens
 
   final val localModifierTokens: BitSet = BitSet(
-    ABSTRACT, FINAL, SEALED, IMPLICIT, LAZY, ERASED)
+    ABSTRACT, FINAL, SEALED, IMPLICIT, LAZY, ERASED, SAFE, LOCAL)
 
   final val accessModifierTokens: BitSet = BitSet(
     PRIVATE, PROTECTED)

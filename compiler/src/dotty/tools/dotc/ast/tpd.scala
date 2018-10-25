@@ -219,8 +219,9 @@ object tpd extends Trees.Instance[Type] with TypedTreeInfo {
         def valueParam(name: TermName, origInfo: Type): TermSymbol = {
           val maybeImplicit = if (tp.isImplicitMethod) Implicit else EmptyFlags
           val maybeErased = if (tp.isErasedMethod) Erased else EmptyFlags
+          val maybeLocal = if (tp.isLocalMethod) LocalMod else EmptyFlags
 
-          def makeSym(info: Type) = ctx.newSymbol(sym, name, TermParam | maybeImplicit | maybeErased, info, coord = sym.coord)
+          def makeSym(info: Type) = ctx.newSymbol(sym, name, TermParam | maybeImplicit | maybeErased | maybeLocal, info, coord = sym.coord)
 
           if (isParamDependent) {
             val sym = makeSym(origInfo.substParams(tp, previousParamRefs.toList))
