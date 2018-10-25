@@ -1307,6 +1307,10 @@ object Types {
       case _ => Nil
     }
 
+    final def paramAnnoss(implicit ctx: Context): Set[Name] = stripPoly match {
+      case mt: MethodType => mt.paramAnnos.union(mt.resultType.paramAnnoss)
+      case _ => Set()
+    }
 
     /** The parameter types in the first parameter section of a generic type or MethodType, Empty list for others */
     final def firstParamTypes(implicit ctx: Context): List[Type] = stripPoly match {
@@ -2754,6 +2758,8 @@ object Types {
     def paramInfos: List[PInfo]
     def resType: Type
     protected def newParamRef(n: Int): ParamRefType
+
+    var paramAnnos : Set[Name] = Set()
 
     override def resultType(implicit ctx: Context): Type = resType
 

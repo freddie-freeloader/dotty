@@ -31,7 +31,12 @@ class Compiler {
    *     plain SymDenotation, as opposed to a UniqueRefDenotation.
    */
   def phases: List[List[Phase]] =
-    frontendPhases ::: picklerPhases ::: transformPhases ::: backendPhases
+    frontendPhases :::
+    List(List(new DenoteSafeParams)) :::
+    List(List(new TestCheck)) :::
+    picklerPhases :::
+    transformPhases :::
+    backendPhases
 
   /** Phases dealing with the frontend up to trees ready for TASTY pickling */
   protected def frontendPhases: List[List[Phase]] =
