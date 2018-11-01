@@ -1242,7 +1242,7 @@ class Scala2Unpickler(bytes: Array[Byte], classRoot: ClassDenotation, moduleClas
     val pflags = (pflagsHi.toLong << 32) + pflagsLo
     val flags = unpickleScalaFlags(pflags, isType)
     val privateWithin = readNameRef().asTypeName
-    Modifiers(flags, privateWithin, Nil)
+    Modifiers(flags, privateWithin, /* TODO: This is just a dummy */ privateWithin, Nil)
   }
 
   protected def readTemplateRef()(implicit ctx: Context): Template =

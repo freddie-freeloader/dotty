@@ -175,6 +175,11 @@ object Contexts {
     protected def store_=(store: Store): Unit = _store = store
     def store: Store = _store
 
+    // Symbol or type
+    private var _localMode: Type = _
+    protected def localMode_=(localMode: Type): Unit = _localMode = localMode
+    def localMode: Type = _localMode
+
     /** The compiler callback implementation, or null if no callback will be called. */
     def compilerCallback: CompilerCallback = store(compilerCallbackLoc)
 
@@ -486,6 +491,8 @@ object Contexts {
     private def setMoreProperties(moreProperties: Map[Key[Any], Any]): this.type = { this.moreProperties = moreProperties; this }
     private def setStore(store: Store): this.type = { this.store = store; this }
     def setImplicits(implicits: ContextualImplicits): this.type = { this.implicitsCache = implicits; this }
+
+    def setLocalMode(localMode: Type) : this.type = { this.localMode = localMode; this }
 
     def setCompilerCallback(callback: CompilerCallback): this.type = updateStore(compilerCallbackLoc, callback)
     def setSbtCallback(callback: AnalysisCallback): this.type = updateStore(sbtCallbackLoc, callback)

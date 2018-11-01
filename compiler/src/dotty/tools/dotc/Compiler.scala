@@ -33,9 +33,10 @@ class Compiler {
   def phases: List[List[Phase]] =
     frontendPhases :::
     List(List(new DenoteSafeParams)) :::
-    List(List(new TestCheck)) :::
     picklerPhases :::
     transformPhases :::
+    List(List(new DenoteSafeParams)) :::
+    List(List(new TestCheck)) :::
     backendPhases
 
   /** Phases dealing with the frontend up to trees ready for TASTY pickling */

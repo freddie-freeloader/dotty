@@ -17,7 +17,12 @@ class TestCheck extends Phase {
 
   override def run(implicit ctx: Context): Unit = {
     val curTree = ctx.compilationUnit.tpdTree
-    traverser((),curTree)
+    // Create local context
+    val lctx = ctx.fresh
+
+    // Set mode to local[Any] (i.e. second-class)
+    lctx.setLocalMode(anyTpe)
+    traverser((),curTree)(lctx)
   }
 
   override def phaseName = "testCheck"
@@ -25,9 +30,35 @@ class TestCheck extends Phase {
   // Snd-Mode
   val traverser : TreeTraverser = new TreeTraverser {
     override def traverse(tree: Tree)(implicit ctx: Context): Unit = tree match {
-      case x : ValOrDefDef => {
-        check((), x.rhs)
+      case Ident(_) => {
+
+        val classiness: Type = getClassiness(tree)
+
+        if (!(classiness <:< ctx.localMode)) {
+          val denotation: SymDenotations.SymDenotation = tree.tpe.termSymbol.denot
+          val className = classiness.typeSymbol.denot.name.toSimpleName.debugString
+          ctx.error("Found local["++ className ++ "] value " ++ denotation.toString)
+        }
       }
+
+      case x : ValDef => {
+
+        val classiness = getClassiness(tree)
+
+        val lctx = ctx.fresh
+        lctx.setLocalMode(classiness)
+        this((), x.rhs)(lctx)
+      }
+
+      case x : DefDef => {
+
+        val classiness = getClassiness(tree)
+
+        val lctx = ctx.fresh
+        lctx.setLocalMode(nothingTpe)
+        this((), x.rhs)(lctx)
+      }
+
       case Apply(fn,args) => {
         // We are trying to get the denotations of the args :(
         if (fn.denot.info.paramNamess.nonEmpty) {
@@ -36,7 +67,7 @@ class TestCheck extends Phase {
             awn: (Trees.Tree[Type], Names.TermName) <- argsWithNames
           } yield {
 
-            if (isLocal(awn._1) && !fn.denot.info.stripPoly.paramAnnoss.contains(awn._2)) {
+            if (hasLocalAnnotation(awn._1) && !fn.denot.info.stripPoly.paramAnnoss.contains(awn._2)) {
               ctx.error("Found local " ++ awn._1.denot.toString ++ " as non-local argument of " ++ fn.denot.toString)
             }
           }
@@ -44,8 +75,8 @@ class TestCheck extends Phase {
         traverseChildren(tree)
       }
       case Assign(lhs,rhs) => {
-        if (!(isLocal(lhs))) {
-          check((), rhs)
+        if (!(hasLocalAnnotation(lhs))) {
+          this((), rhs)
         } else {
           traverseChildren(tree)
         }
@@ -56,21 +87,42 @@ class TestCheck extends Phase {
 
   // Fst-Mode
 
+  /*
   val check : TreeTraverser = new TreeTraverser {
     override def traverse(tree: Tree)(implicit ctx: Context): Unit = tree match {
       case Block(e1,e2) => {
         traverser((),e1)
         check((),e2)
       }
-      case Ident(_) => {
-        val denotation: SymDenotations.SymDenotation = tree.tpe.termSymbol.denot
-        if (isLocal(tree)) ctx.error("Found local value " ++ denotation.toString) else ()
-      }
       case _ =>
     }
   }
+  */
 
-  def isLocal(tree : tpd.Tree)(implicit ctx: Context) : Boolean = {
+  def nothingTpe(implicit ctx: Context) : Type = defn.NothingClass.denot.typeRef
+
+  def anyTpe(implicit ctx: Context) : Type = defn.AnyClass.denot.typeRef
+
+  def getClassiness(tree: tpd.Tree)(implicit ctx: Context) : Type = {
+
+    // If first-class we just return Nothing
+    if (!hasLocalAnnotation(tree))
+      return nothingTpe
+
+    var typeParam: Type = null
+
+    try {
+      typeParam = tree.tpe.termSymbol.denot.annotations.head.asInstanceOf[ConcreteAnnotation].t.tpe.asInstanceOf[AppliedType].args.head
+    } catch {
+      case _: Throwable =>
+        // TODO We generously assume that there is just no type param to local in this case
+        return anyTpe
+    }
+
+    typeParam
+  }
+
+  def hasLocalAnnotation(tree : tpd.Tree)(implicit ctx: Context) : Boolean = {
     val denotation: SymDenotations.SymDenotation = tree.tpe.termSymbol.denot
     val isLocal = {
       val annos = denotation.annotations

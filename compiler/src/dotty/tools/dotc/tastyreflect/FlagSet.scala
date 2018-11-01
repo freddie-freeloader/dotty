@@ -19,7 +19,7 @@ class FlagSet(flags: Flags.FlagSet) extends scala.tasty.reflect.FlagSet {
   def isStatic: Boolean = flags.is(JavaStatic)
   def isObject: Boolean = flags.is(Module)
   def isTrait: Boolean = flags.is(Trait)
-  def isLocal: Boolean = flags.is(Local)
+  def isLocal: Boolean = flags.is(LocalAccess)
   def isSynthetic: Boolean = flags.is(Synthetic)
   def isArtifact: Boolean = flags.is(Artifact)
   def isMutable: Boolean = flags.is(Mutable)

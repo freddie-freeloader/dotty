@@ -118,6 +118,8 @@ object untpd extends Trees.Instance[Untyped] with UntypedTreeInfo {
 
     case class Erased() extends Mod(Flags.Erased)
 
+    case class Local() extends Mod(Flags.LocalMod)
+
     case class Final() extends Mod(Flags.Final)
 
     case class Sealed() extends Mod(Flags.Sealed)
@@ -143,6 +145,7 @@ object untpd extends Trees.Instance[Untyped] with UntypedTreeInfo {
   case class Modifiers (
     flags: FlagSet = EmptyFlags,
     privateWithin: TypeName = tpnme.EMPTY,
+    localQualifier : TypeName = tpnme.EMPTY,
     annotations: List[Tree] = Nil,
     mods: List[Mod] = Nil) extends Positioned with Cloneable {
 
@@ -192,9 +195,14 @@ object untpd extends Trees.Instance[Untyped] with UntypedTreeInfo {
       if (pw.isEmpty) this
       else copy(privateWithin = pw)
 
+    def withLocalQualifier(pw: TypeName): Modifiers =
+      if (pw.isEmpty) /* TODO: Is this fine?*/ this
+      else copy(localQualifier = pw)
+
     def hasFlags: Boolean = flags != EmptyFlags
     def hasAnnotations: Boolean = annotations.nonEmpty
     def hasPrivateWithin: Boolean = privateWithin != tpnme.EMPTY
+    def hasLocalQualifier: Boolean = localQualifier != tpnme.EMPTY
 
     private def isEnum = is(Enum, butNot = JavaDefined)
 

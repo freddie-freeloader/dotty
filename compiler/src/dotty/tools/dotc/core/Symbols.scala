@@ -58,9 +58,10 @@ trait Symbols { this: Context =>
       flags: FlagSet,
       info: Type,
       privateWithin: Symbol = NoSymbol,
+      localQualifier: TypeName = EmptyTypeName,
       coord: Coord = NoCoord): Symbol { type ThisName = N } = {
     val sym = newNakedSymbol[N](coord)
-    val denot = SymDenotation(sym, owner, name, flags, info, privateWithin)
+    val denot = SymDenotation(sym, owner, name, flags, info, privateWithin, localQualifier)
     sym.denot = denot
     sym
   }
@@ -266,8 +267,8 @@ trait Symbols { this: Context =>
     newSymbol(owner, nme.IMPORT, Synthetic | NonMember, info, coord = coord)
 
   /** Create a class constructor symbol for given class `cls`. */
-  def newConstructor(cls: ClassSymbol, flags: FlagSet, paramNames: List[TermName], paramTypes: List[Type], privateWithin: Symbol = NoSymbol, coord: Coord = NoCoord): TermSymbol =
-    newSymbol(cls, nme.CONSTRUCTOR, flags | Method, MethodType(paramNames, paramTypes, cls.typeRef), privateWithin, coord)
+  def newConstructor(cls: ClassSymbol, flags: FlagSet, paramNames: List[TermName], paramTypes: List[Type], privateWithin: Symbol = NoSymbol, localQualifier: TypeName = EmptyTypeName,coord: Coord = NoCoord): TermSymbol =
+    newSymbol(cls, nme.CONSTRUCTOR, flags | Method, MethodType(paramNames, paramTypes, cls.typeRef), privateWithin, localQualifier, coord)
 
   /** Create an empty default constructor symbol for given class `cls`. */
   def newDefaultConstructor(cls: ClassSymbol): TermSymbol =

@@ -67,7 +67,7 @@ class RefinedPrinter(_ctx: Context) extends PlainPrinter(_ctx) {
 
   override protected def recursionLimitExceeded(): Unit = {}
 
-  protected val PrintableFlags: FlagSet = (SourceModifierFlags | Label | Module | Local).toCommonFlags
+  protected val PrintableFlags: FlagSet = (SourceModifierFlags | Label | Module | LocalAccess).toCommonFlags
 
   override def nameString(name: Name): String =
     if (ctx.settings.YdebugNames.value) name.debugString else name.toString
@@ -612,6 +612,7 @@ class RefinedPrinter(_ctx: Context) extends PlainPrinter(_ctx) {
   def Modifiers(sym: Symbol)(implicit ctx: Context): Modifiers = untpd.Modifiers(
     sym.flags & (if (sym.isType) ModifierFlags | VarianceFlags else ModifierFlags),
     if (sym.privateWithin.exists) sym.privateWithin.asType.name else tpnme.EMPTY,
+    if (sym.localQualifier.isEmpty) sym.localQualifier else tpnme.EMPTY,
     sym.annotations map (_.tree))
 
   protected def optAscription[T >: Untyped](tpt: Tree[T]): Text = optText(tpt)(": " ~ _)

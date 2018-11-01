@@ -2,6 +2,7 @@ package dotty.tools.dotc
 
 import core._
 import Types._
+import Flags._
 import Contexts.Context
 import Symbols._
 import Decorators._
@@ -25,6 +26,27 @@ class DenoteSafeParams extends Phase {
 
   val traverser : TreeTraverser = new TreeTraverser {
     override def traverse(tree: tpd.Tree)(implicit ctx: Context): Unit = tree match {
+      case Ident(_) => {
+        if (tree.denot.name.toSimpleName.toString.contains("bar") || tree.denot.name.toSimpleName.toString.contains("baz")) {
+          // denot.info.isLocalMethod
+          if (tree.denot.asSymDenotation.is(LocalMod)) {
+            print("Yay!")
+            return ()
+          }
+        }
+        ()
+      }
+      case Apply(f,x) => {
+        if (f.denot.name.toSimpleName.toString.contains("bar")) {
+          // denot.info.isLocalMethod
+          if (tree.denot.asSymDenotation.is(LocalMod)) {
+            print("Yay!")
+            return ()
+          }
+        }
+        ()
+      }
+        /*
       case DefDef(_,_,paramss,_,_) if paramss.headOption.getOrElse(List()).nonEmpty => {
         var tempAnnos : Set[Name] = Set()
         for {
@@ -44,6 +66,7 @@ class DenoteSafeParams extends Phase {
         }
         traverseChildren(tree)
       }
+        */
       case _ => traverseChildren(tree)
     }
   }
