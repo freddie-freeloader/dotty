@@ -130,6 +130,8 @@ class Definitions {
           enterTypeParam(cls, paramNamePrefix ++ "T" ++ (i + 1).toString, Contravariant, decls).typeRef
         }
         val resParamRef = enterTypeParam(cls, paramNamePrefix ++ "R", Covariant, decls).typeRef
+
+        // Todo: What's the story here with the qualifier?
         val methodType = MethodType.maker(isJava = false, name.isImplicitFunction, name.isErasedFunction, name.isLocalFunction)
         val parentTraits =
           if (!name.isImplicitFunction) Nil

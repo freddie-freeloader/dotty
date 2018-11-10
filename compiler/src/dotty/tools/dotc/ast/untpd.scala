@@ -141,6 +141,8 @@ object untpd extends Trees.Instance[Untyped] with UntypedTreeInfo {
    *  @param privateWithin  If a private or protected has is followed by a
    *                        qualifier [q], the name q, "" as a typename otherwise.
    *  @param annotations    The annotations preceding the modifiers
+   *  @param localQualifier The qualifier of the `local` mod.
+   *                        Has special semantics for `FunctionWithMods`.
    */
   case class Modifiers (
     flags: FlagSet = EmptyFlags,

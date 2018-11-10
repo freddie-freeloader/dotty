@@ -2991,9 +2991,9 @@ object Types {
     final override def isImplicitMethod: Boolean =
       companion.eq(ImplicitMethodType) ||
       companion.eq(ErasedImplicitMethodType) ||
-      companion.eq(LocalImplicitMethodType)
+      (companion match { case LocalMethodType(_,isImplicit) => isImplicit })
     final override def isErasedMethod: Boolean = companion.eq(ErasedMethodType) || companion.eq(ErasedImplicitMethodType)
-    final override def isLocalMethod: Boolean = companion.eq(LocalMethodType) || companion.eq(LocalImplicitMethodType)
+    final override def isLocalMethod: Boolean = companion.isInstanceOf[LocalMethodType]
 
     def computeSignature(implicit ctx: Context): Signature = {
       val params = if (isErasedMethod) Nil else paramInfos
@@ -3086,7 +3086,11 @@ object Types {
   }
 
   object MethodType extends MethodTypeCompanion {
-    def maker(isJava: Boolean = false, isImplicit: Boolean = false, isErased: Boolean = false, isLocal: Boolean = false): MethodTypeCompanion = {
+    def maker(isJava: Boolean = false,
+              isImplicit: Boolean = false,
+              isErased: Boolean = false,
+              isLocal: Boolean = false,
+              localQualifier: TypeName = EmptyTypeName): MethodTypeCompanion = {
       if (isJava) {
         assert(!isImplicit)
         assert(!isErased)
@@ -3094,19 +3098,18 @@ object Types {
         JavaMethodType
       }
       else if (isImplicit && isErased) ErasedImplicitMethodType
-      else if (isImplicit && isLocal) LocalImplicitMethodType
+      else if (isImplicit && isLocal) LocalMethodType(localQualifier, isImplicit = true)
       else if (isImplicit) ImplicitMethodType
       else if (isErased) ErasedMethodType
-      else if (isLocal) LocalMethodType
+      else if (isLocal) LocalMethodType(localQualifier)
       else MethodType
     }
   }
   object JavaMethodType extends MethodTypeCompanion
   object ImplicitMethodType extends MethodTypeCompanion
   object ErasedMethodType extends MethodTypeCompanion
-  object LocalMethodType extends MethodTypeCompanion
+  final case class  LocalMethodType(localQualifier: TypeName, isImplicit: Boolean = false) extends MethodTypeCompanion
   object ErasedImplicitMethodType extends MethodTypeCompanion
-  object LocalImplicitMethodType extends MethodTypeCompanion
 
   /** A ternary extractor for MethodType */
   object MethodTpe {

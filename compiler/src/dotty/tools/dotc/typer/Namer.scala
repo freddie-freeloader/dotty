@@ -127,13 +127,18 @@ trait NamerContextOps { this: Context =>
       termParamss
 
   /** The method type corresponding to given parameters and result type */
-  def methodType(typeParams: List[Symbol], valueParamss: List[List[Symbol]], resultType: Type, isJava: Boolean = false, isLocal: Boolean = false)(implicit ctx: Context): Type = {
+  def methodType(typeParams: List[Symbol],
+                 valueParamss: List[List[Symbol]],
+                 resultType: Type,
+                 isJava: Boolean = false,
+                 isLocal: Boolean = false,
+                 localQualifier: TypeName = EmptyTypeName)(implicit ctx: Context): Type = {
     val monotpe =
       (valueParamss :\ resultType) { (params, resultType) =>
-        val (isImplicit, isErased, isLocal) =
-          if (params.isEmpty) (false, false, false)
-          else (params.head is Implicit, params.head is Erased, params.head is LocalMod)
-        val make = MethodType.maker(isJava, isImplicit, isErased, isLocal)
+        val (isImplicit, isErased, isLocal, localQualifier) =
+          if (params.isEmpty) (false, false, false, EmptyTypeName)
+          else (params.head is Implicit, params.head is Erased, params.head is LocalMod, params.head.localQualifier)
+        val make = MethodType.maker(isJava, isImplicit, isErased, isLocal, localQualifier)
         if (isJava)
           for (param <- params)
             if (param.info.isDirectRef(defn.ObjectClass)) param.info = defn.AnyType
@@ -265,8 +270,16 @@ class Namer { typer: Typer =>
     def privateWithinClass(mods: Modifiers) =
       enclosingClassNamed(mods.privateWithin, mods.pos)
 
-    def localQualifier(mods: Modifiers) =
+    def localQualifier(mods: Modifiers) = {
+      try {
+        if (tree.asInstanceOf[ValOrDefDef].name.toSimpleName.toString.contains("bar")) {
+          println("barrrrr")
+        }
+      } catch {
+        case _ : Throwable =>
+      }
       mods.localQualifier
+    }
 
     /** Check that flags are OK for symbol. This is done early to avoid
      *  catastrophic failure when we create a TermSymbol with TypeFlags, or vice versa.
@@ -308,6 +321,7 @@ class Namer { typer: Typer =>
     }
 
     /** Create new symbol or redefine existing symbol under lateCompile. */
+    // Todo: `symFN` is super ugly because it assumes the same shape for all Symbols.
     def createOrRefine[S <: Symbol](
         tree: MemberDef, name: Name, flags: FlagSet, infoFn: S => Type,
         symFn: (FlagSet, S => Type, Symbol, TypeName) => S): Symbol = {
@@ -322,7 +336,9 @@ class Namer { typer: Typer =>
           prev.localQualifier = localQualifier(tree.mods)
           prev
         }
-        else symFn(flags, infoFn, privateWithinClass(tree.mods), localQualifier(tree.mods))
+        else {
+          symFn(flags, infoFn, privateWithinClass(tree.mods), localQualifier(tree.mods))
+        }
       recordSym(sym, tree)
     }
 
@@ -333,7 +349,8 @@ class Namer { typer: Typer =>
         val cls =
           createOrRefine[ClassSymbol](tree, name, flags,
             cls => adjustIfModule(new ClassCompleter(cls, tree)(ctx), tree),
-            ctx.newClassSymbol(ctx.owner, name, _, _, _, tree.namePos, ctx.source.file))
+            (lFlags, lInfoFn, lPrivateWithin, _ ) =>
+              ctx.newClassSymbol(ctx.owner, name, lFlags, lInfoFn, lPrivateWithin, tree.namePos, ctx.source.file))
         cls.completer.asInstanceOf[ClassCompleter].init()
         cls
       case tree: MemberDef =>
@@ -365,7 +382,7 @@ class Namer { typer: Typer =>
         val info = adjustIfModule(completer, tree)
         createOrRefine[Symbol](tree, name, flags | deferred | method | higherKinded,
           _ => info,
-          (fs, _, pwithin) => ctx.newSymbol(ctx.owner, name, fs, info, pwithin, tree.namePos))
+          (fs, _, pwithin, lQualifier) => ctx.newSymbol(ctx.owner, name, fs, info, pwithin, lQualifier, tree.namePos))
       case tree: Import =>
         recordSym(ctx.newImportSymbol(ctx.owner, new Completer(tree), tree.pos), tree)
       case _ =>

@@ -1808,8 +1808,8 @@ object Parsers {
     def localQualifierOpt(mods: Modifiers): Modifiers =
       if (in.token == LBRACKET) {
         // TODO: Is this Right? And what should we throw here?
-        if ((mods is LocalMod) || mods.hasLocalQualifier)
-          syntaxError(DuplicatePrivateProtectedQualifier())
+        //if ((mods is LocalMod) || mods.hasLocalQualifier)
+        //  syntaxError(DuplicatePrivateProtectedQualifier())
         inBrackets {
           mods.withLocalQualifier(ident().toTypeName)
         }
@@ -1843,7 +1843,7 @@ object Parsers {
       normalize(loop(start))
     }
 
-    /** FunArgMods ::= { `implicit` | `erased` }
+    /** FunArgMods ::= { `implicit` | `erased` | `local` }
      */
     def funArgMods: BitSet = BitSet(IMPLICIT, ERASED, LOCAL)
 
@@ -1987,6 +1987,8 @@ object Parsers {
             implicitOffset = -1
           }
           for (imod <- imods.mods) mods = addMod(mods, imod)
+          if (imods.hasLocalQualifier)
+            mods = mods.withLocalQualifier(imods.localQualifier)
           ValDef(name, tpt, default).withMods(mods)
         }
       }
@@ -2003,6 +2005,8 @@ object Parsers {
               funArgMods()
             } else if (in.token == LOCAL) {
               imods = addMod(imods, atPos(accept(LOCAL)) { Mod.Local() })
+              imods = localQualifierOpt(imods)
+
               funArgMods()
             }
           }

@@ -20,6 +20,7 @@ import Contexts._
 import Types._
 import Symbols._
 import Phases._
+import Names.EmptyTypeName
 
 import dotty.tools.dotc.util.Positions
 import Decorators._
@@ -819,7 +820,7 @@ class DottyBackendInterface(outputDirectory: AbstractFile, val superCallsMap: Ma
 
 
     def freshLocal(cunit: CompilationUnit, name: String, tpe: Type, pos: Position, flags: Flags): Symbol = {
-      ctx.newSymbol(sym, name.toTermName, FlagSet(flags), tpe, NoSymbol, pos)
+      ctx.newSymbol(sym, name.toTermName, FlagSet(flags), tpe, NoSymbol, EmptyTypeName, pos)
     }
 
     def getter(clz: Symbol): Symbol = decorateSymbol(sym).getter

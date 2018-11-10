@@ -39,7 +39,7 @@ trait SymDenotations { this: Context =>
       if (symbol.isClass)
         if (initFlags is Package) new PackageClassDenotation(symbol, owner, name, initFlags, initInfo, initPrivateWithin)
         else new ClassDenotation(symbol, owner, name, initFlags, initInfo, initPrivateWithin)
-      else new SymDenotation(symbol, owner, name, initFlags, initInfo, initPrivateWithin)
+      else new SymDenotation(symbol, owner, name, initFlags, initInfo, initPrivateWithin, initLocalQualifier)
     result.validFor = stablePeriod
     result
   }
@@ -1241,6 +1241,7 @@ object SymDenotations {
       initFlags: FlagSet = UndefinedFlags,
       info: Type = null,
       privateWithin: Symbol = null,
+      localQualifier: TypeName = null,
       annotations: List[Annotation] = null)(implicit ctx: Context): SymDenotation =
     { // simulate default parameters, while also passing implicit context ctx to the default values
       val initFlags1 = (if (initFlags != UndefinedFlags) initFlags else this.flags)
@@ -1248,8 +1249,9 @@ object SymDenotations {
       if (ctx.isAfterTyper && changedClassParents(info, info1, completersMatter = false))
         assert(ctx.phase.changesParents, i"undeclared parent change at ${ctx.phase} for $this, was: $info, now: $info1")
       val privateWithin1 = if (privateWithin != null) privateWithin else this.privateWithin
+      val localQualifier1 = if (localQualifier != null) localQualifier else this.localQualifier
       val annotations1 = if (annotations != null) annotations else this.annotations
-      val d = ctx.SymDenotation(symbol, owner, name, initFlags1, info1, privateWithin1)
+      val d = ctx.SymDenotation(symbol, owner, name, initFlags1, info1, privateWithin1, localQualifier1)
       d.annotations = annotations1
       d
     }

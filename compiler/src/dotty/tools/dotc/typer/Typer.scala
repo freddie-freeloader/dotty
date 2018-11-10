@@ -755,19 +755,21 @@ class Typer extends Namer
 
   def typedFunctionType(tree: untpd.Function, pt: Type)(implicit ctx: Context): Tree = {
     val untpd.Function(args, body) = tree
-    val (isImplicit, isErased, isLocal) = tree match {
+    val (isImplicit, isErased, isLocal, localQualifier) = tree match {
       case tree: untpd.FunctionWithMods =>
         val isImplicit = tree.mods.is(Implicit)
         var isErased = tree.mods.is(Erased)
         val isLocal = tree.mods.is(LocalMod)
+        val localModifier = tree.mods.localQualifier
         if (isErased && args.isEmpty) {
           ctx.error("An empty function cannot not be erased", tree.pos)
           isErased = false
         }
-        (isImplicit, isErased, isLocal)
-      case _ => (false, false, false)
+        (isImplicit, isErased, isLocal, localModifier)
+      case _ => (false, false, false, EmptyTypeName)
     }
 
+    // TODO: Think about this considering we have local qualifiers
     val funCls = defn.FunctionClass(args.length, isImplicit, isErased, isLocal)
 
     /** Typechecks dependent function type with given parameters `params` */
@@ -775,7 +777,7 @@ class Typer extends Namer
       completeParams(params)
       val params1 = params.map(typedExpr(_).asInstanceOf[ValDef])
       val resultTpt = typed(body)
-      val companion = MethodType.maker(isImplicit = isImplicit, isErased = isErased, isLocal = isLocal)
+      val companion = MethodType.maker(isImplicit = isImplicit, isErased = isErased, isLocal = isLocal, localQualifier = localQualifier)
       val mt = companion.fromSymbols(params1.map(_.symbol), resultTpt.tpe)
       if (mt.isParamDependent)
         ctx.error(i"$mt is an illegal function type because it has inter-parameter dependencies", tree.pos)

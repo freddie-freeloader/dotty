@@ -31,13 +31,8 @@ class TestCheck extends Phase {
   val traverser : TreeTraverser = new TreeTraverser {
     override def traverse(tree: Tree)(implicit ctx: Context): Unit = tree match {
       case Ident(_) => {
-
-        val classiness: Type = getClassiness(tree)
-
-        if (!(classiness <:< ctx.localMode)) {
-          val denotation: SymDenotations.SymDenotation = tree.tpe.termSymbol.denot
-          val className = classiness.typeSymbol.denot.name.toSimpleName.debugString
-          ctx.error("Found local["++ className ++ "] value " ++ denotation.toString)
+        if (tree.denot.name.toSimpleName.toString.contains("baz")) {
+          print("baaaarrrrr!")
         }
       }
 

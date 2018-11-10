@@ -542,7 +542,8 @@ class TreeUnpickler(reader: TastyReader,
             if (isClass)
               ctx.newClassSymbol(ctx.owner, name.asTypeName, flags, completer, privateWithin, coord)
             else
-              ctx.newSymbol(ctx.owner, name, flags, completer, privateWithin, coord)
+              // Todo
+              ctx.newSymbol(ctx.owner, name, flags, completer, privateWithin, EmptyTypeName, coord)
         }
       sym.annotations = annotFns.map(_(sym))
       ctx.owner match {

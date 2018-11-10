@@ -86,7 +86,7 @@ trait Symbols { this: Context =>
       assocFile: AbstractFile = null): ClassSymbol
   = {
     val cls = newNakedClassSymbol(coord, assocFile)
-    val denot = SymDenotation(cls, owner, name, flags, infoFn(cls), privateWithin)
+    val denot = SymDenotation(cls, owner, name, flags, infoFn(cls), privateWithin, EmptyTypeName) // Todo
     cls.denot = denot
     cls
   }
@@ -361,6 +361,7 @@ trait Symbols { this: Context =>
           initFlags = odenot.flags &~ Touched,
           info = completer,
           privateWithin = ttmap1.mapOwner(odenot.privateWithin), // since this refers to outer symbols, need not include copies (from->to) in ownermap here.
+          localQualifier = odenot.localQualifier, // Todo: What's right here?
           annotations = odenot.annotations)
       }
 
@@ -761,12 +762,13 @@ object Symbols {
         flags: FlagSet = sym.flags,
         info: Type = sym.info,
         privateWithin: Symbol = sym.privateWithin,
+        localQualifier: TypeName = sym.localQualifier,
         coord: Coord = sym.coord,
         associatedFile: AbstractFile = sym.associatedFile): Symbol =
       if (sym.isClass)
         ctx.newClassSymbol(owner, name.asTypeName, flags, _ => info, privateWithin, coord, associatedFile)
       else
-        ctx.newSymbol(owner, name, flags, info, privateWithin, coord)
+        ctx.newSymbol(owner, name, flags, info, privateWithin, localQualifier, coord)
   }
 
   /** Makes all denotation operations available on symbols */
