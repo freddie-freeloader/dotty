@@ -131,7 +131,7 @@ class Definitions {
         }
         val resParamRef = enterTypeParam(cls, paramNamePrefix ++ "R", Covariant, decls).typeRef
 
-        // Todo: What's the story here with the qualifier?
+        // Todo: IMPORTANT What's the story here with the qualifier?
         val methodType = MethodType.maker(isJava = false, name.isImplicitFunction, name.isErasedFunction, name.isLocalFunction)
         val parentTraits =
           if (!name.isImplicitFunction) Nil
@@ -836,7 +836,7 @@ class Definitions {
 
   object FunctionOf {
     def apply(args: List[Type], resultType: Type, isImplicit: Boolean = false, isErased: Boolean = false, isLocal: Boolean = false)(implicit ctx: Context): Type =
-      FunctionType(args.length, isImplicit, isErased).appliedTo(args ::: resultType :: Nil)
+      FunctionType(args.length, isImplicit, isErased, isLocal).appliedTo(args ::: resultType :: Nil)
     def unapply(ft: Type)(implicit ctx: Context): Option[(List[Type], Type, Boolean, Boolean, Boolean)] = {
       val tsym = ft.typeSymbol
       if (isFunctionClass(tsym)) {
@@ -913,7 +913,7 @@ class Definitions {
     if (isImplicit && isErased)
       ctx.requiredClass("scala.ErasedImplicitFunction" + n.toString)
     else if (isImplicit && isLocal)
-    ctx.requiredClass("scala.LocalImplicitFunction" + n.toString)
+      ctx.requiredClass("scala.LocalImplicitFunction" + n.toString) // TODO: Add this classes to standard library
     else if (isImplicit)
       ctx.requiredClass("scala.ImplicitFunction" + n.toString)
     else if (isErased)
@@ -1095,7 +1095,7 @@ class Definitions {
   def isNonDepFunctionType(tp: Type)(implicit ctx: Context): Boolean = {
     val arity = functionArity(tp)
     val sym = tp.dealias.typeSymbol
-    arity >= 0 && isFunctionClass(sym) && tp.isRef(FunctionType(arity, sym.name.isImplicitFunction, sym.name.isErasedFunction).typeSymbol)
+    arity >= 0 && isFunctionClass(sym) && tp.isRef(FunctionType(arity, sym.name.isImplicitFunction, sym.name.isErasedFunction, sym.name.isLocalFunction).typeSymbol)
   }
 
   /** Is `tp` a representation of a (possibly depenent) function type or an alias of such? */

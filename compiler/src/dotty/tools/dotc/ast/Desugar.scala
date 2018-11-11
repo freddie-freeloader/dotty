@@ -150,10 +150,14 @@ object desugar {
     else vdef
   }
 
-  def makeImplicitParameters(tpts: List[Tree], forPrimaryConstructor: Boolean = false)(implicit ctx: Context): List[ValDef] =
+  def makeImplicitParameters(tpts: List[Tree], forPrimaryConstructor: Boolean = false, isErased: Boolean = false, isLocal: Boolean = false)(implicit ctx: Context): List[ValDef] =
     for (tpt <- tpts) yield {
-       val paramFlags: FlagSet = if (forPrimaryConstructor) PrivateLocalParamAccessor else Param
+       var paramFlags: FlagSet = if (forPrimaryConstructor) PrivateLocalParamAccessor else Param
        val epname = EvidenceParamName.fresh()
+       if (isErased)
+         paramFlags = paramFlags | Erased
+       if (isLocal)
+         paramFlags = paramFlags | LocalMod
        ValDef(epname, tpt, EmptyTree).withFlags(paramFlags | Implicit)
     }
 
@@ -882,9 +886,14 @@ object desugar {
     Function(param :: Nil, Block(vdefs, body))
   }
 
-  def makeImplicitFunction(formals: List[Type], body: Tree)(implicit ctx: Context): Tree = {
-    val params = makeImplicitParameters(formals.map(TypeTree))
-    new FunctionWithMods(params, body, Modifiers(Implicit))
+  def makeImplicitFunction(formals: List[Type], body: Tree, isErased: Boolean, isLocal: Boolean)(implicit ctx: Context): Tree = {
+    val params = makeImplicitParameters(formals.map(TypeTree), isErased = isErased, isLocal = isLocal)
+    var mods = EmptyModifiers
+    if (isErased)
+      mods = mods.withFlags(Erased)
+    if (isLocal)
+      mods = mods.withFlags(LocalMod)
+    new FunctionWithMods(params, body, mods.withFlags(Implicit))
   }
 
   /** Add annotation to tree:

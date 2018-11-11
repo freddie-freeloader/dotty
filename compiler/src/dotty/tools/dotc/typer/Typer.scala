@@ -1950,8 +1950,8 @@ class Typer extends Namer
   }
 
   protected def makeImplicitFunction(tree: untpd.Tree, pt: Type)(implicit ctx: Context): Tree = {
-    val defn.FunctionOf(formals, _, true, _, _) = pt.dropDependentRefinement
-    val ifun = desugar.makeImplicitFunction(formals, tree)
+    val defn.FunctionOf(formals, _, true, isErased, isLocal) = pt.dropDependentRefinement
+    val ifun = desugar.makeImplicitFunction(formals, tree, isErased, isLocal)
     typr.println(i"make implicit function $tree / $pt ---> $ifun")
     typed(ifun, pt)
   }

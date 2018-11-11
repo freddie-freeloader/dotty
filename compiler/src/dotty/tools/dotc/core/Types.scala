@@ -2991,7 +2991,7 @@ object Types {
     final override def isImplicitMethod: Boolean =
       companion.eq(ImplicitMethodType) ||
       companion.eq(ErasedImplicitMethodType) ||
-      (companion match { case LocalMethodType(_,isImplicit) => isImplicit })
+      (companion match { case LocalMethodType(_,isImplicit) => isImplicit; case _ => false })
     final override def isErasedMethod: Boolean = companion.eq(ErasedMethodType) || companion.eq(ErasedImplicitMethodType)
     final override def isLocalMethod: Boolean = companion.isInstanceOf[LocalMethodType]
 
