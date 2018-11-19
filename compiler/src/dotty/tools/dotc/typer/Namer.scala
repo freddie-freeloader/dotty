@@ -265,9 +265,6 @@ class Namer { typer: Typer =>
     def privateWithinClass(mods: Modifiers) =
       enclosingClassNamed(mods.privateWithin, mods.pos)
 
-    def localQualifier(mods: Modifiers) =
-      mods.localQualifier
-
     /** Check that flags are OK for symbol. This is done early to avoid
      *  catastrophic failure when we create a TermSymbol with TypeFlags, or vice versa.
      *  A more complete check is done in checkWellformed.
@@ -310,7 +307,7 @@ class Namer { typer: Typer =>
     /** Create new symbol or redefine existing symbol under lateCompile. */
     def createOrRefine[S <: Symbol](
         tree: MemberDef, name: Name, flags: FlagSet, infoFn: S => Type,
-        symFn: (FlagSet, S => Type, Symbol, TypeName) => S): Symbol = {
+        symFn: (FlagSet, S => Type, Symbol) => S): Symbol = {
       val prev =
         if (lateCompile && ctx.owner.is(Package)) ctx.effectiveScope.lookup(name)
         else NoSymbol
@@ -319,10 +316,9 @@ class Namer { typer: Typer =>
           prev.flags = flags
           prev.info = infoFn(prev.asInstanceOf[S])
           prev.privateWithin = privateWithinClass(tree.mods)
-          prev.localQualifier = localQualifier(tree.mods)
           prev
         }
-        else symFn(flags, infoFn, privateWithinClass(tree.mods), localQualifier(tree.mods))
+        else symFn(flags, infoFn, privateWithinClass(tree.mods))
       recordSym(sym, tree)
     }
 

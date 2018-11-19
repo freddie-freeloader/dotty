@@ -1803,18 +1803,6 @@ object Parsers {
         }
       } else mods
 
-    /** LocalQualifier ::= "[" Ident "]"
-      */
-    def localQualifierOpt(mods: Modifiers): Modifiers =
-      if (in.token == LBRACKET) {
-        // TODO: Is this Right? And what should we throw here?
-        if ((mods is LocalMod) || mods.hasLocalQualifier)
-          syntaxError(DuplicatePrivateProtectedQualifier())
-        inBrackets {
-          mods.withLocalQualifier(ident().toTypeName)
-        }
-      } else mods
-
     /** {Annotation} {Modifier}
      *  Modifiers      ::= {Modifier}
      *  LocalModifiers ::= {LocalModifier}
@@ -1832,7 +1820,7 @@ object Parsers {
           val isAccessMod = accessModifierTokens contains in.token
           val isLocalMod = BitSet(LOCAL) contains in.token
           val mods1 = addModifier(mods)
-          loop(if (isAccessMod) accessQualifierOpt(mods1) else if (isLocalMod) localQualifierOpt(mods1) else mods1)
+          loop(if (isAccessMod) accessQualifierOpt(mods1) else mods1)
         } else if (in.token == NEWLINE && (mods.hasFlags || mods.hasAnnotations)) {
           in.nextToken()
           loop(mods)

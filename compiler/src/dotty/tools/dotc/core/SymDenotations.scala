@@ -33,8 +33,7 @@ trait SymDenotations { this: Context =>
     name: Name,
     initFlags: FlagSet,
     initInfo: Type,
-    initPrivateWithin: Symbol = NoSymbol,
-    initLocalQualifier: TypeName = EmptyTypeName)(implicit ctx: Context): SymDenotation = {
+    initPrivateWithin: Symbol = NoSymbol)(implicit ctx: Context): SymDenotation = {
     val result =
       if (symbol.isClass)
         if (initFlags is Package) new PackageClassDenotation(symbol, owner, name, initFlags, initInfo, initPrivateWithin)
@@ -121,8 +120,7 @@ object SymDenotations {
     final val name: Name,
     initFlags: FlagSet,
     initInfo: Type,
-    initPrivateWithin: Symbol = NoSymbol,
-    initLocalQualifier: TypeName = EmptyTypeName) extends SingleDenotation(symbol, initInfo) {
+    initPrivateWithin: Symbol = NoSymbol) extends SingleDenotation(symbol, initInfo) {
 
     //assert(symbol.id != 4940, name)
 
@@ -139,7 +137,6 @@ object SymDenotations {
 
     private[this] var myFlags: FlagSet = adaptFlags(initFlags)
     private[this] var myPrivateWithin: Symbol = initPrivateWithin
-    private[this] var myLocalQualifier: TypeName = initLocalQualifier
     private[this] var myAnnotations: List[Annotation] = Nil
 
     /** The owner of the symbol; overridden in NoDenotation */
@@ -266,14 +263,6 @@ object SymDenotations {
     /** Set privateWithin. */
     protected[dotc] final def privateWithin_=(sym: Symbol): Unit =
       myPrivateWithin = sym
-
-    /** The local qualifier, EmptyTypeName if no qualifier is given.
-      */
-    final def localQualifier(implicit ctx: Context): TypeName = { ensureCompleted(); myLocalQualifier }
-
-    /** Set localQualifier. */
-    protected[dotc] final def localQualifier_=(typeName: TypeName): Unit =
-      myLocalQualifier = typeName
 
     /** The annotations of this denotation */
     final def annotations(implicit ctx: Context): List[Annotation] = {

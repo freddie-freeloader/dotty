@@ -175,10 +175,17 @@ object Contexts {
     protected def store_=(store: Store): Unit = _store = store
     def store: Store = _store
 
-    // Symbol or type
+    /** Current classiness that can be changed */
     private var _localMode: Type = _
     protected def localMode_=(localMode: Type): Unit = _localMode = localMode
     def localMode: Type = _localMode
+
+    /** Symbols of the surrounding closures
+      * These are simply aggregated
+      */
+    private var _boundary: List[Symbol] = List()
+    protected def boundary_=(localMode: List[Symbol]): Unit = _boundary = localMode
+    def boundary: List[Symbol] = _boundary
 
     /** The compiler callback implementation, or null if no callback will be called. */
     def compilerCallback: CompilerCallback = store(compilerCallbackLoc)
@@ -493,6 +500,7 @@ object Contexts {
     def setImplicits(implicits: ContextualImplicits): this.type = { this.implicitsCache = implicits; this }
 
     def setLocalMode(localMode: Type) : this.type = { this.localMode = localMode; this }
+    def addBoundary(s: Symbol) : this.type = { this.boundary = s :: boundary; this }
 
     def setCompilerCallback(callback: CompilerCallback): this.type = updateStore(compilerCallbackLoc, callback)
     def setSbtCallback(callback: AnalysisCallback): this.type = updateStore(sbtCallbackLoc, callback)

@@ -183,7 +183,8 @@ object NameOps {
      */
     def isImplicitFunction: Boolean = {
       functionArityFor(str.ImplicitFunction) >= 0 ||
-      functionArityFor(str.ErasedImplicitFunction) > 0
+      functionArityFor(str.ErasedImplicitFunction) > 0 ||
+      functionArityFor(str.LocalImplicitFunction) >= 0
     }
 
     /** Is an erased function name, i.e. one of ErasedFunctionN, ErasedImplicitFunctionN for N > 0
@@ -196,8 +197,8 @@ object NameOps {
     /** Is an local function name, i.e. one of LocalFunctionN, LocalImplicitFunctionN for N > 0
       */
     def isLocalFunction: Boolean = {
-      functionArityFor(str.LocalFunction) > 0 ||
-        functionArityFor(str.LocalImplicitFunction) > 0
+      functionArityFor(str.LocalFunction) >= 0 ||
+      functionArityFor(str.LocalImplicitFunction) >= 0
     }
 
     /** Is a synthetic function name, i.e. one of
