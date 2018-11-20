@@ -602,7 +602,7 @@ class TreeUnpickler(reader: TastyReader,
           case OBJECT => addFlag(Module)
           case TRAIT => addFlag(Trait)
           case ENUM => addFlag(Enum)
-          case LOCAL => addFlag(Local)
+          case LOCAL => addFlag(LocalAccess)
           case SYNTHETIC => addFlag(Synthetic)
           case ARTIFACT => addFlag(Artifact)
           case MUTABLE => addFlag(Mutable)

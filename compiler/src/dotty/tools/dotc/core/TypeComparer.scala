@@ -1865,7 +1865,7 @@ class TrackingTypeComparer(initctx: Context) extends TypeComparer(initctx) {
           case _ =>
             cas
         }
-        val defn.FunctionOf(pat :: Nil, body, _, _) = cas1
+        val defn.FunctionOf(pat :: Nil, body, _, _, _) = cas1
         if (isSubType(scrut, pat))
           caseLambda match {
             case caseLambda: HKTypeLambda if instantiate =>

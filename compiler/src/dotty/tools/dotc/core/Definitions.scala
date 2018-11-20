@@ -130,7 +130,7 @@ class Definitions {
           enterTypeParam(cls, paramNamePrefix ++ "T" ++ (i + 1).toString, Contravariant, decls).typeRef
         }
         val resParamRef = enterTypeParam(cls, paramNamePrefix ++ "R", Covariant, decls).typeRef
-        val methodType = MethodType.maker(isJava = false, name.isImplicitFunction, name.isErasedFunction)
+        val methodType = MethodType.maker(isJava = false, name.isImplicitFunction, name.isErasedFunction, name.isLocalFunction)
         val parentTraits =
           if (!name.isImplicitFunction) Nil
           else FunctionType(arity, isErased = name.isErasedFunction).appliedTo(argParamRefs ::: resParamRef :: Nil) :: Nil
@@ -833,14 +833,14 @@ class Definitions {
     sym.owner.linkedClass.typeRef
 
   object FunctionOf {
-    def apply(args: List[Type], resultType: Type, isImplicit: Boolean = false, isErased: Boolean = false)(implicit ctx: Context): Type =
+    def apply(args: List[Type], resultType: Type, isImplicit: Boolean = false, isErased: Boolean = false, isLocal: Boolean = false)(implicit ctx: Context): Type =
       FunctionType(args.length, isImplicit, isErased).appliedTo(args ::: resultType :: Nil)
-    def unapply(ft: Type)(implicit ctx: Context): Option[(List[Type], Type, Boolean, Boolean)] = {
+    def unapply(ft: Type)(implicit ctx: Context): Option[(List[Type], Type, Boolean, Boolean, Boolean)] = {
       val tsym = ft.typeSymbol
       if (isFunctionClass(tsym)) {
         val targs = ft.dealias.argInfos
         if (targs.isEmpty) None
-        else Some(targs.init, targs.last, tsym.name.isImplicitFunction, tsym.name.isErasedFunction)
+        else Some(targs.init, targs.last, tsym.name.isImplicitFunction, tsym.name.isErasedFunction, tsym.name.isLocalFunction)
       }
       else None
     }
@@ -907,13 +907,18 @@ class Definitions {
 
   lazy val TupleType: Array[TypeRef] = mkArityArray("scala.Tuple", MaxTupleArity, 1)
 
-  def FunctionClass(n: Int, isImplicit: Boolean = false, isErased: Boolean = false)(implicit ctx: Context): Symbol =
+  def FunctionClass(n: Int, isImplicit: Boolean = false, isErased: Boolean = false, isLocal: Boolean = false)(implicit ctx: Context): Symbol =
     if (isImplicit && isErased)
       ctx.requiredClass("scala.ErasedImplicitFunction" + n.toString)
+    else if (isImplicit && isLocal)
+    ctx.requiredClass("scala.LocalImplicitFunction" + n.toString)
     else if (isImplicit)
       ctx.requiredClass("scala.ImplicitFunction" + n.toString)
     else if (isErased)
       ctx.requiredClass("scala.ErasedFunction" + n.toString)
+    else if (isLocal)
+      // TODO: Add this classes to standard library
+      ctx.requiredClass("scala.LocalFunction" + n.toString)
     else if (n <= MaxImplementedFunctionArity)
       FunctionClassPerRun()(ctx)(n)
     else
@@ -922,9 +927,9 @@ class Definitions {
     lazy val Function0_applyR: TermRef = ImplementedFunctionType(0).symbol.requiredMethodRef(nme.apply)
     def Function0_apply(implicit ctx: Context): Symbol = Function0_applyR.symbol
 
-  def FunctionType(n: Int, isImplicit: Boolean = false, isErased: Boolean = false)(implicit ctx: Context): TypeRef =
-    if (n <= MaxImplementedFunctionArity && (!isImplicit || ctx.erasedTypes) && !isErased) ImplementedFunctionType(n)
-    else FunctionClass(n, isImplicit, isErased).typeRef
+  def FunctionType(n: Int, isImplicit: Boolean = false, isErased: Boolean = false, isLocal: Boolean = false)(implicit ctx: Context): TypeRef =
+    if (n <= MaxImplementedFunctionArity && (!isImplicit || ctx.erasedTypes) && !isErased && !isLocal) ImplementedFunctionType(n)
+    else FunctionClass(n, isImplicit, isErased, isLocal).typeRef
 
   /** If `cls` is a class in the scala package, its name, otherwise EmptyTypeName */
   def scalaClassName(cls: Symbol)(implicit ctx: Context): TypeName =
@@ -964,6 +969,12 @@ class Definitions {
    *   - ErasedImplicitFunctionN for N > 0
    */
   def isErasedFunctionClass(cls: Symbol): Boolean = scalaClassName(cls).isErasedFunction
+
+  /** Is an local function class.
+    *   - LocalFunctionN for N > 0
+    *   - LocalImplicitFunctionN for N > 0
+    */
+  def isLocalFunctionClass(cls: Symbol): Boolean = scalaClassName(cls).isLocalFunction
 
   /** Is a class that will be erased to FunctionXXL
    *   - FunctionN for N >= 22

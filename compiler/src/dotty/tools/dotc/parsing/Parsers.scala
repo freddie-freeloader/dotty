@@ -751,7 +751,7 @@ object Parsers {
       def functionRest(params: List[Tree]): Tree =
         atPos(start, accept(ARROW)) {
           val t = typ()
-          if (imods.is(Implicit) || imods.is(Erased)) new FunctionWithMods(params, t, imods)
+          if (imods.is(Implicit) || imods.is(Erased) || imods.is(LocalMod)) new FunctionWithMods(params, t, imods)
           else Function(params, t)
         }
       def funArgTypesRest(first: Tree, following: () => Tree) = {
@@ -1128,7 +1128,7 @@ object Parsers {
 
     def expr(location: Location.Value): Tree = {
       val start = in.offset
-      if (in.token == IMPLICIT || in.token == ERASED) {
+      if (in.token == IMPLICIT || in.token == ERASED || in.token == LOCAL) {
         val imods = modifiers(funArgMods)
         implicitClosure(start, location, imods)
       } else {
@@ -1739,6 +1739,7 @@ object Parsers {
       case FINAL       => Mod.Final()
       case IMPLICIT    => Mod.Implicit()
       case ERASED      => Mod.Erased()
+      case LOCAL       => Mod.Local()
       case LAZY        => Mod.Lazy()
       case OVERRIDE    => Mod.Override()
       case PRIVATE     => Mod.Private()
@@ -1794,10 +1795,10 @@ object Parsers {
      */
     def accessQualifierOpt(mods: Modifiers): Modifiers =
       if (in.token == LBRACKET) {
-        if ((mods is Local) || mods.hasPrivateWithin)
+        if ((mods is LocalAccess) || mods.hasPrivateWithin)
           syntaxError(DuplicatePrivateProtectedQualifier())
         inBrackets {
-          if (in.token == THIS) { in.nextToken(); mods | Local }
+          if (in.token == THIS) { in.nextToken(); mods | LocalAccess }
           else mods.withPrivateWithin(ident().toTypeName)
         }
       } else mods
@@ -1817,6 +1818,7 @@ object Parsers {
         if (allowed.contains(in.token) ||
             isIdent(nme.INLINEkw) && localModifierTokens.subsetOf(allowed)) {
           val isAccessMod = accessModifierTokens contains in.token
+          val isLocalMod = BitSet(LOCAL) contains in.token
           val mods1 = addModifier(mods)
           loop(if (isAccessMod) accessQualifierOpt(mods1) else mods1)
         } else if (in.token == NEWLINE && (mods.hasFlags || mods.hasAnnotations)) {
@@ -1831,7 +1833,7 @@ object Parsers {
 
     /** FunArgMods ::= { `implicit` | `erased` }
      */
-    def funArgMods: BitSet = BitSet(IMPLICIT, ERASED)
+    def funArgMods: BitSet = BitSet(IMPLICIT, ERASED, LOCAL)
 
     /** Wrap annotation or constructor in New(...).<init> */
     def wrapNew(tpt: Tree): Select = Select(New(tpt), nme.CONSTRUCTOR)
@@ -1962,7 +1964,7 @@ object Parsers {
         atPos(start, nameStart) {
           val name = ident()
           accept(COLON)
-          if (in.token == ARROW && owner.isTypeName && !(mods is Local))
+          if (in.token == ARROW && owner.isTypeName && !(mods is LocalAccess))
             syntaxError(VarValParametersMayNotBeCallByName(name, mods is Mutable))
           val tpt = paramType()
           val default =
@@ -1986,6 +1988,9 @@ object Parsers {
               funArgMods()
             } else if (in.token == ERASED) {
               imods = addMod(imods, atPos(accept(ERASED)) { Mod.Erased() })
+              funArgMods()
+            } else if (in.token == LOCAL) {
+              imods = addMod(imods, atPos(accept(LOCAL)) { Mod.Local() })
               funArgMods()
             }
           }
@@ -2606,7 +2611,7 @@ object Parsers {
         else if (isExprIntro)
           stats += expr(Location.InBlock)
         else if (isDefIntro(localModifierTokens))
-          if (in.token == IMPLICIT || in.token == ERASED) {
+          if (in.token == IMPLICIT || in.token == ERASED || in.token == LOCAL) {
             val start = in.offset
             var imods = modifiers(funArgMods)
             if (isBindingIntro && !isIdent(nme.INLINEkw))

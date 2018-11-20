@@ -118,6 +118,8 @@ object untpd extends Trees.Instance[Untyped] with UntypedTreeInfo {
 
     case class Erased() extends Mod(Flags.Erased)
 
+    case class Local() extends Mod(Flags.LocalMod)
+
     case class Final() extends Mod(Flags.Final)
 
     case class Sealed() extends Mod(Flags.Sealed)

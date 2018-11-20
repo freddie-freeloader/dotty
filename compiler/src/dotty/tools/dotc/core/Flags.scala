@@ -106,7 +106,7 @@ object Flags {
     /** The list of non-empty names of flags that are set in this FlagSet */
     def flagStrings: Seq[String] = {
       val rawStrings = (2 to MaxFlag).flatMap(flagString)
-      if (this is Local)
+      if (this is LocalAccess)
         rawStrings.filter(_ != "<local>").map {
           case "private" => "private[this]"
           case "protected" => "protected[this]"
@@ -256,7 +256,7 @@ object Flags {
   /** Symbol is local to current class (i.e. private[this] or protected[this]
    *  pre: Private or Protected are also set
    */
-  final val Local: FlagSet = commonFlag(13, "<local>")
+  final val LocalAccess: FlagSet = commonFlag(13, "<local>")
 
   /** A field generated for a primary constructor parameter (no matter if it's a 'val' or not),
    *  or an accessor of such a field.
@@ -369,6 +369,10 @@ object Flags {
   /** Labeled with `erased` modifier (erased value)  */
   final val Erased: FlagSet = termFlag(42, "erased")
 
+  /** Labeled with `local` modifier (local value)  */
+  final val LocalMod: FlagSet = termFlag(43, "local")
+  // TODO: Do we need this for Local? `final val Implicit: FlagSet = ImplicitCommon.toTermFlags`
+
   // Flags following this one are not pickled
 
   /** Symbol is not a member of its owner */
@@ -437,18 +441,18 @@ object Flags {
   /** Flags representing source modifiers */
   final val SourceModifierFlags: FlagSet =
     commonFlags(Private, Protected, Abstract, Final, Inline,
-     Sealed, Case, Implicit, Override, AbsOverride, Lazy, JavaStatic, Erased)
+     Sealed, Case, Implicit, Override, AbsOverride, Lazy, JavaStatic, Erased, LocalMod)
 
   /** Flags representing modifiers that can appear in trees */
   final val ModifierFlags: FlagSet =
-    SourceModifierFlags | Module | Param | Synthetic | Package | Local |
+    SourceModifierFlags | Module | Param | Synthetic | Package | LocalAccess |
     commonFlags(Mutable)
       // | Trait is subsumed by commonFlags(Lazy) from SourceModifierFlags
 
   assert(ModifierFlags.isTermFlags && ModifierFlags.isTypeFlags)
 
   /** Flags representing access rights */
-  final val AccessFlags: FlagSet = Private | Protected | Local
+  final val AccessFlags: FlagSet = Private | Protected | LocalAccess
 
   /** Flags that are not (re)set when completing the denotation */
   final val FromStartFlags: FlagSet =
@@ -479,7 +483,7 @@ object Flags {
 
   /** Flags that are passed from a type parameter of a class to a refinement symbol
     * that sets the type parameter */
-  final val RetainedTypeArgFlags: FlagSet = VarianceFlags | Protected | Local
+  final val RetainedTypeArgFlags: FlagSet = VarianceFlags | Protected | LocalAccess
 
   /** Modules always have these flags set */
   final val ModuleValCreationFlags: FlagSet = ModuleVal | Lazy | Final | Stable
@@ -496,11 +500,11 @@ object Flags {
   final val NoInitsInterface: FlagSet = NoInits | PureInterface
 
   /** The flags of the self symbol */
-  final val SelfSymFlags: FlagSet = Private | Local | Deferred
+  final val SelfSymFlags: FlagSet = Private | LocalAccess | Deferred
 
   /** The flags of a class type parameter */
   final val ClassTypeParamCreationFlags: FlagSet =
-    TypeParam | Deferred | Private | Local
+    TypeParam | Deferred | Private | LocalAccess
 
   /** Flags that can apply to both a module val and a module class, except those that
     *  are added at creation anyway
@@ -513,7 +517,7 @@ object Flags {
   /** Flags that can apply to a module val */
   final val RetainedModuleValFlags: FlagSet = RetainedModuleValAndClassFlags |
     Override | Final | Method | Implicit | Lazy |
-    Accessor | AbsOverride | Stable | Captured | Synchronized | Erased
+    Accessor | AbsOverride | Stable | Captured | Synchronized | Erased | LocalMod
 
   /** Flags that can apply to a module class */
   final val RetainedModuleClassFlags: FlagSet = RetainedModuleValAndClassFlags | ImplClass | Enum
@@ -531,7 +535,7 @@ object Flags {
   final val AbstractOrTrait: FlagSet = Abstract | Trait
 
   /** Labeled `private` or `protected[local]` */
-  final val PrivateOrLocal: FlagSet = Private | Local
+  final val PrivateOrLocal: FlagSet = Private | LocalAccess
 
   /** Either a module or a final class */
   final val ModuleOrFinal: FlagSet = ModuleClass | Final
@@ -600,10 +604,10 @@ object Flags {
   final val FinalOrInline: FlagSet = Final | Inline
 
   /** A covariant type parameter instance */
-  final val LocalCovariant: FlagConjunction = allOf(Local, Covariant)
+  final val LocalCovariant: FlagConjunction = allOf(LocalAccess, Covariant)
 
   /** A contravariant type parameter instance */
-  final val LocalContravariant: FlagConjunction = allOf(Local, Contravariant)
+  final val LocalContravariant: FlagConjunction = allOf(LocalAccess, Contravariant)
 
   /** Has defined or inherited default parameters */
   final val HasDefaultParams: FlagSet = DefaultParameterized | InheritedDefaultParams
@@ -645,25 +649,25 @@ object Flags {
   final val JavaEnumValue: FlagConjunction = allOf(Stable, JavaStatic, JavaDefined, Enum)
 
   /** Labeled private[this] */
-  final val PrivateLocal: FlagConjunction = allOf(Private, Local)
+  final val PrivateLocal: FlagConjunction = allOf(Private, LocalAccess)
 
   /** A private[this] parameter accessor */
-  final val PrivateLocalParamAccessor: FlagConjunction = allOf(Private, Local, ParamAccessor)
+  final val PrivateLocalParamAccessor: FlagConjunction = allOf(Private, LocalAccess, ParamAccessor)
 
   /** A parameter forwarder */
   final val ParamForwarder: FlagConjunction = allOf(Method, Stable, ParamAccessor)
 
   /** A private[this] parameter */
-  final val PrivateLocalParam: FlagConjunction = allOf(Private, Local, Param)
+  final val PrivateLocalParam: FlagConjunction = allOf(Private, LocalAccess, Param)
 
   /** A private parameter accessor */
   final val PrivateParamAccessor: FlagConjunction = allOf(Private, ParamAccessor)
 
   /** A local parameter */
-  final val ParamAndLocal: FlagConjunction = allOf(Param, Local)
+  final val ParamAndLocal: FlagConjunction = allOf(Param, LocalAccess)
 
   /** Labeled protected[this] */
-  final val ProtectedLocal: FlagConjunction = allOf(Protected, Local)
+  final val ProtectedLocal: FlagConjunction = allOf(Protected, LocalAccess)
 
   /** Java symbol which is `protected` and `static` */
   final val StaticProtected: FlagConjunction = allOf(JavaDefined, Protected, JavaStatic)

@@ -755,26 +755,27 @@ class Typer extends Namer
 
   def typedFunctionType(tree: untpd.Function, pt: Type)(implicit ctx: Context): Tree = {
     val untpd.Function(args, body) = tree
-    val (isImplicit, isErased) = tree match {
+    val (isImplicit, isErased, isLocal) = tree match {
       case tree: untpd.FunctionWithMods =>
         val isImplicit = tree.mods.is(Implicit)
         var isErased = tree.mods.is(Erased)
+        val isLocal = tree.mods.is(LocalMod)
         if (isErased && args.isEmpty) {
           ctx.error("An empty function cannot not be erased", tree.pos)
           isErased = false
         }
-        (isImplicit, isErased)
-      case _ => (false, false)
+        (isImplicit, isErased, isLocal)
+      case _ => (false, false, false)
     }
 
-    val funCls = defn.FunctionClass(args.length, isImplicit, isErased)
+    val funCls = defn.FunctionClass(args.length, isImplicit, isErased, isLocal)
 
     /** Typechecks dependent function type with given parameters `params` */
     def typedDependent(params: List[ValDef])(implicit ctx: Context): Tree = {
       completeParams(params)
       val params1 = params.map(typedExpr(_).asInstanceOf[ValDef])
       val resultTpt = typed(body)
-      val companion = MethodType.maker(isImplicit = isImplicit, isErased = isErased)
+      val companion = MethodType.maker(isImplicit = isImplicit, isErased = isErased, isLocal = isLocal)
       val mt = companion.fromSymbols(params1.map(_.symbol), resultTpt.tpe)
       if (mt.isParamDependent)
         ctx.error(i"$mt is an illegal function type because it has inter-parameter dependencies", tree.pos)
@@ -1947,7 +1948,7 @@ class Typer extends Namer
   }
 
   protected def makeImplicitFunction(tree: untpd.Tree, pt: Type)(implicit ctx: Context): Tree = {
-    val defn.FunctionOf(formals, _, true, _) = pt.dropDependentRefinement
+    val defn.FunctionOf(formals, _, true, _, _) = pt.dropDependentRefinement
     val ifun = desugar.makeImplicitFunction(formals, tree)
     typr.println(i"make implicit function $tree / $pt ---> $ifun")
     typed(ifun, pt)
