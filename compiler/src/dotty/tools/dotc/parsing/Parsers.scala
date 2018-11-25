@@ -1740,6 +1740,7 @@ object Parsers {
       case IMPLICIT    => Mod.Implicit()
       case ERASED      => Mod.Erased()
       case LOCAL       => Mod.Local()
+      case SAFE        => Mod.Safe()
       case LAZY        => Mod.Lazy()
       case OVERRIDE    => Mod.Override()
       case PRIVATE     => Mod.Private()

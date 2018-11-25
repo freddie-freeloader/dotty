@@ -371,7 +371,9 @@ object Flags {
 
   /** Labeled with `local` modifier (local value)  */
   final val LocalMod: FlagSet = termFlag(43, "local")
-  // TODO: Do we need this for Local? `final val Implicit: FlagSet = ImplicitCommon.toTermFlags`
+
+  /** Labeled with `safe` modifier (local value)  */
+  final val Safe: FlagSet = termFlag(44, "safe")
 
   // Flags following this one are not pickled
 

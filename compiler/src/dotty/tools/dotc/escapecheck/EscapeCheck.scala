@@ -40,13 +40,22 @@ class EscapeCheck extends Phase {
 
 
       case Block(stats @ (fn: DefDef) :: Nil, Closure(_, fnRef, tpt)) if fnRef.symbol == fn.symbol =>
-        print("Foo")
+        if (ctx.localMode.eq(secondClass))
+          fn.symbol.denot.setFlag(Flags.LocalMod)
+
+        traverse(fn.rhs)(ctx.fresh.setLocalMode(firstClass).addBoundary(fn.symbol))
 
       case tree : ValDef =>
-        traverseWithLocalMode(tree.rhs, getClassiness(tree))
+        if (isSafeDef(tree))
+          ()
+        else
+          traverseWithLocalMode(tree.rhs, getClassiness(tree))
 
       case tree : DefDef =>
-        traverse(tree.rhs)(ctx.fresh.setLocalMode(firstClass).addBoundary(tree.symbol))
+        if (isSafeDef(tree))
+          ()
+        else
+          traverse(tree.rhs)(ctx.fresh.setLocalMode(firstClass).addBoundary(tree.symbol))
 
       case Assign(lhs, rhs) =>
         traverseWithLocalMode(rhs, getClassiness(lhs))
@@ -80,6 +89,9 @@ class EscapeCheck extends Phase {
       traverse(tree)(ctx.fresh.setLocalMode(classiness))
     }
   }
+
+  def isSafeDef(tree: tpd.Tree)(implicit ctx: Context) : Boolean =
+    tree.symbol.denot.flags.is(Flags.Safe)
 
   def isSecondClass(tree: tpd.Tree)(implicit ctx: Context) : Boolean =
     isSecondClass(tree.symbol)
