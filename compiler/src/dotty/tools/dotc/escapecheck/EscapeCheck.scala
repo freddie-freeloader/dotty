@@ -32,7 +32,7 @@ class EscapeCheck extends Phase {
           else {
             for (s <- ctx.boundary) {
               if (!tree.symbol.denot.isContainedIn(s) && !isSecondClass(s))
-                ctx.error(em"Found local ${tree.symbol} inside $s.", tree.pos)
+                ctx.error(em"Found local ${tree.symbol} inside first class $s.", tree.pos)
             }
           }
 
@@ -76,9 +76,76 @@ class EscapeCheck extends Phase {
 
       case Block(stats, expr) =>
         stats.foreach(traverseWithLocalMode(_, secondClass))
-        traverseWithLocalMode(expr, firstClass)
+        traverse(expr)
 
-      case _ => traverseChildren(tree)
+      // class definition
+      case TypeDef(_, tmpl @ Template(_, _, _, _)) =>
+        tmpl.body.foreach(traverseWithLocalMode(_,secondClass))
+
+      case Return(expr, from) =>
+        traverse(expr)
+        // Should we analyze the classiness of `from`?
+
+      case If(cond, thenp, elsep) =>
+        traverseWithLocalMode(cond, firstClass)
+        traverse(thenp)
+        traverse(elsep)
+
+      case Match(selector, cases) =>
+        // Todo: scala-escape uses first class here but is this correct?
+        traverseWithLocalMode(selector, firstClass)
+        cases.foreach(traverse)
+
+      case Try(expr, cases, finalizer) =>
+        (expr :: cases).foreach(traverse)
+        traverseWithLocalMode(finalizer, secondClass)
+
+      case CaseDef(_, guard, body) =>
+        traverseWithLocalMode(guard, secondClass)
+        traverse(body)
+
+      case WhileDo(cond,body) =>
+        traverseWithLocalMode(cond, secondClass)
+        traverseWithLocalMode(body, secondClass)
+
+      // Todo
+      //case SeqLiteral(elems, _) => ???
+
+      case Select(qualifier, name) =>
+        traverse(qualifier)
+        // Todo: Should we check whether the name references a second class thing? I'd say yes!
+
+      case Import(expr, _) =>
+        // Todo: For some reason they used first class in scala-escape for this
+        traverseWithLocalMode(expr, secondClass)
+
+      case PackageDef(_, stats) =>
+        stats.foreach(traverseWithLocalMode(_, secondClass))
+
+      case TypeApply(fn, _) =>
+        traverse(fn)
+
+      case Typed(expr, _) =>
+        traverse(expr)
+
+      case SeqLiteral(elems, _) =>
+        elems.foreach(traverseWithLocalMode(_, firstClass))
+
+      case TypeDef(_, rhs) =>
+        traverseWithLocalMode(rhs, secondClass)
+
+      case NamedArg(_, arg) =>
+        traverse(arg)
+
+
+      case _: This =>
+      case _: New => ()
+      case _: Literal => ()
+      case EmptyTree => ()
+
+      case _ =>
+        //println(s"Encountered unhandled node ${tree.getClass}!")
+        traverseChildren(tree)
     }
 
     def traverseWithBoundary(tree: tpd.Tree, s: Symbol)(implicit ctx: Context): Unit= {
