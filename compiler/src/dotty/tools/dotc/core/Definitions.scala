@@ -133,7 +133,7 @@ class Definitions {
         val methodType = MethodType.maker(isJava = false, name.isImplicitFunction, name.isErasedFunction, name.isLocalFunction)
         val parentTraits =
           if (!name.isImplicitFunction) Nil
-          else FunctionType(arity, isErased = name.isErasedFunction).appliedTo(argParamRefs ::: resParamRef :: Nil) :: Nil
+          else FunctionType(arity, isErased = name.isErasedFunction, isLocal = name.isLocalFunction).appliedTo(argParamRefs ::: resParamRef :: Nil) :: Nil
         decls.enter(newMethod(cls, nme.apply, methodType(argParamRefs, resParamRef), Deferred))
         denot.info =
           ClassInfo(ScalaPackageClass.thisType, cls, ObjectType :: parentTraits, decls)
@@ -834,7 +834,7 @@ class Definitions {
 
   object FunctionOf {
     def apply(args: List[Type], resultType: Type, isImplicit: Boolean = false, isErased: Boolean = false, isLocal: Boolean = false)(implicit ctx: Context): Type =
-      FunctionType(args.length, isImplicit, isErased).appliedTo(args ::: resultType :: Nil)
+      FunctionType(args.length, isImplicit, isErased, isLocal).appliedTo(args ::: resultType :: Nil)
     def unapply(ft: Type)(implicit ctx: Context): Option[(List[Type], Type, Boolean, Boolean, Boolean)] = {
       val tsym = ft.typeSymbol
       if (isFunctionClass(tsym)) {
@@ -917,7 +917,6 @@ class Definitions {
     else if (isErased)
       ctx.requiredClass("scala.ErasedFunction" + n.toString)
     else if (isLocal)
-      // TODO: Add this classes to standard library
       ctx.requiredClass("scala.LocalFunction" + n.toString)
     else if (n <= MaxImplementedFunctionArity)
       FunctionClassPerRun()(ctx)(n)
@@ -1093,7 +1092,8 @@ class Definitions {
   def isNonDepFunctionType(tp: Type)(implicit ctx: Context): Boolean = {
     val arity = functionArity(tp)
     val sym = tp.dealias.typeSymbol
-    arity >= 0 && isFunctionClass(sym) && tp.isRef(FunctionType(arity, sym.name.isImplicitFunction, sym.name.isErasedFunction).typeSymbol)
+    arity >= 0 && isFunctionClass(sym) &&
+    tp.isRef(FunctionType(arity, sym.name.isImplicitFunction, sym.name.isErasedFunction, sym.name.isLocalFunction).typeSymbol)
   }
 
   /** Is `tp` a representation of a (possibly depenent) function type or an alias of such? */

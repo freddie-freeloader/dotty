@@ -785,7 +785,7 @@ object Parsers {
             }
             openParens.change(LPAREN, -1)
             accept(RPAREN)
-            if (imods.is(Implicit) || isValParamList || in.token == ARROW) functionRest(ts)
+            if (imods.is(Implicit | Erased | LocalMod) || isValParamList || in.token == ARROW) functionRest(ts)
             else {
               val ts1 =
                 for (t <- ts) yield {
@@ -820,8 +820,8 @@ object Parsers {
         case MATCH => matchType(EmptyTree, t)
         case FORSOME => syntaxError(ExistentialTypesNoLongerSupported()); t
         case _ =>
-          if (imods.is(Implicit) && !t.isInstanceOf[FunctionWithMods])
-            syntaxError("Types with implicit keyword can only be function types", implicitKwPos(start))
+          if (imods.is(Implicit | Erased | LocalMod) && !t.isInstanceOf[FunctionWithMods])
+            syntaxError("Types with implicit, erased or local keyword can only be function types", implicitKwPos(start))
           t
       }
     }
@@ -1819,7 +1819,6 @@ object Parsers {
         if (allowed.contains(in.token) ||
             isIdent(nme.INLINEkw) && localModifierTokens.subsetOf(allowed)) {
           val isAccessMod = accessModifierTokens contains in.token
-          val isLocalMod = BitSet(LOCAL) contains in.token
           val mods1 = addModifier(mods)
           loop(if (isAccessMod) accessQualifierOpt(mods1) else mods1)
         } else if (in.token == NEWLINE && (mods.hasFlags || mods.hasAnnotations)) {
@@ -1832,7 +1831,7 @@ object Parsers {
       normalize(loop(start))
     }
 
-    /** FunArgMods ::= { `implicit` | `erased` }
+    /** FunArgMods ::= { `implicit` | `erased` | `local` }
      */
     def funArgMods: BitSet = BitSet(IMPLICIT, ERASED, LOCAL)
 

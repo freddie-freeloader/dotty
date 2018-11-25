@@ -93,6 +93,8 @@ abstract class TokensCommon {
   //final val FORSOME = 61;          enter(FORSOME, "forSome") // TODO: deprecate
   //final val ENUM = 62;             enter(ENUM, "enum")
   //final val ERASED = 63;           enter(ERASED, "erased")
+  //final val LOCAL = 64;            enter(LOCAL, "local")
+  //final val SAFE = 65;             enter(SAFE, "safe")
 
   /** special symbols */
   final val COMMA = 70;            enter(COMMA, "','")

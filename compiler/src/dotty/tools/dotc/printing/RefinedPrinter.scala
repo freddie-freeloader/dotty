@@ -124,14 +124,17 @@ class RefinedPrinter(_ctx: Context) extends PlainPrinter(_ctx) {
     def toTextTuple(args: List[Type]): Text =
       "(" ~ argsText(args) ~ ")"
 
-    def toTextFunction(args: List[Type], isImplicit: Boolean, isErased: Boolean): Text =
+    def toTextFunction(args: List[Type], isImplicit: Boolean, isErased: Boolean, isLocal: Boolean): Text =
       changePrec(GlobalPrec) {
         val argStr: Text =
           if (args.length == 2 && !defn.isTupleType(args.head))
             atPrec(InfixPrec) { argText(args.head) }
           else
             toTextTuple(args.init)
-        (keywordText("erased ") provided isErased) ~ (keywordText("implicit ") provided isImplicit) ~ argStr ~ " => " ~ argText(args.last)
+        (keywordText("local ") provided isLocal) ~
+        (keywordText("erased ") provided isErased) ~
+        (keywordText("implicit ") provided isImplicit) ~
+        argStr ~ " => " ~ argText(args.last)
       }
 
     def toTextDependentFunction(appType: MethodType): Text = {
@@ -171,7 +174,11 @@ class RefinedPrinter(_ctx: Context) extends PlainPrinter(_ctx) {
       case tp @ AppliedType(tycon, args) =>
         val cls = tycon.typeSymbol
         if (tycon.isRepeatedParam) return toTextLocal(args.head) ~ "*"
-        if (defn.isFunctionClass(cls)) return toTextFunction(args, cls.name.isImplicitFunction, cls.name.isErasedFunction)
+        if (defn.isFunctionClass(cls))
+          return toTextFunction(args,
+            cls.name.isImplicitFunction,
+            cls.name.isErasedFunction,
+            cls.name.isLocalFunction)
         if (tp.tupleArity >= 2) return toTextTuple(tp.tupleElementTypes)
         if (isInfixType(tp)) {
           val l :: r :: Nil = args
