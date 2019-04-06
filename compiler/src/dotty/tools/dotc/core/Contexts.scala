@@ -183,9 +183,9 @@ object Contexts {
     /** Symbols of the surrounding closures
       * These are simply aggregated
       */
-    private var _boundary: List[Symbol] = List()
-    protected def boundary_=(localMode: List[Symbol]): Unit = _boundary = localMode
-    def boundary: List[Symbol] = _boundary
+    private var _enclosingFunctions: List[Symbol] = List()
+    protected def enclosingFunctions_=(fs: List[Symbol]): Unit = _enclosingFunctions = fs
+    def enclosingFunctions: List[Symbol] = _enclosingFunctions
 
     /** The compiler callback implementation, or null if no callback will be called. */
     def compilerCallback: CompilerCallback = store(compilerCallbackLoc)
@@ -500,7 +500,7 @@ object Contexts {
     def setImplicits(implicits: ContextualImplicits): this.type = { this.implicitsCache = implicits; this }
 
     def setLocalMode(localMode: Type) : this.type = { this.localMode = localMode; this }
-    def addBoundary(s: Symbol) : this.type = { this.boundary = s :: boundary; this }
+    def addEnclosingFunction(s: Symbol) : this.type = { this.enclosingFunctions = s :: enclosingFunctions; this }
 
     def setCompilerCallback(callback: CompilerCallback): this.type = updateStore(compilerCallbackLoc, callback)
     def setSbtCallback(callback: AnalysisCallback): this.type = updateStore(sbtCallbackLoc, callback)

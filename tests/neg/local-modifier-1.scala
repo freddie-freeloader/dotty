@@ -17,7 +17,7 @@ object Test {
   x3 = l // error
 
   local var x4: Int = 0
-  x4 = l // OK
+  x4 = l // error
 
   // Simple application
 
@@ -59,16 +59,21 @@ object Test {
   map(List(1,2))(l + (_:Int)) // error
   lmap(List(1,2))(l + (_:Int)) // OK
 
+  // Safe modifier
+
   safe val x5 = l // OK
   def escape0[A](local y: A) = y // error
   safe def escape[A](local y: A) = y // OK
 
+  // No currying for local
+
+  def f(local x: Int)(local g: local Int => Unit) = g(x)
   // Misc
   /*
    These are big errors
   def f10(g: local Int => Int) = g
   f10(local (x:Int) => x) // OK
-  f10((x:Int) => x) // errror
+  f10((x:Int) => x) // should be problem
 
   type T = local Int
    */

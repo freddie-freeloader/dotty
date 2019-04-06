@@ -22,28 +22,47 @@ class EscapeCheck extends Phase {
 
   override def phaseName = "escapeCheck"
 
+  /*
+  We pass on to pieces of information for each recursive step
+   */
   val traverser : TreeTraverser = new TreeTraverser {
     override def traverse(tree: Tree)(implicit ctx: Context): Unit = tree match {
       case _ : Ident =>
 
         if (isSecondClass(tree)) {
-          if (ctx.localMode.eq(firstClass))
+          if (ctx.localMode.eq(firstClass)) {
             ctx.error(em"Found local ${tree.symbol} in first class position.", tree.pos)
-          else {
-            for (s <- ctx.boundary) {
-              if (!tree.symbol.denot.isContainedIn(s) && !isSecondClass(s))
-                ctx.error(em"Found local ${tree.symbol} inside first class $s.", tree.pos)
-            }
+          } else {
+            ctx.enclosingFunctions
+               .filter(isFirstClass(_))
+               .filter(!tree.symbol.denot.isContainedIn(_))
+               .foreach { s =>
+                 ctx.error(em"Found local ${tree.symbol} inside first class $s.", tree.pos)
+               }
           }
 
+        } else {
+          // Identifier is first class therefore it is legal
+          ()
         }
 
-
-      case Block(stats @ (fn: DefDef) :: Nil, Closure(_, fnRef, tpt)) if fnRef.symbol == fn.symbol =>
+      // Anonymous function
+      case Block(stats @ (fn: DefDef) :: Nil, Closure(_, fnRef, tpe)) if fnRef.symbol == fn.symbol =>
+        // Infer whether this is a local function or not
         if (ctx.localMode.eq(secondClass))
           fn.symbol.denot.setFlag(Flags.LocalMod)
+          /*
+           TODO: Does the above work considering what we do in the `Assign` case?
+           I mean:
+           - we set flag for symbol here
+           - In Assign we check the type of the tree
 
-        traverse(fn.rhs)(ctx.fresh.setLocalMode(firstClass).addBoundary(fn.symbol))
+           Also this is stateful and probably just works because we check the left side of apply first
+           and after that check the mode of this node
+            */
+
+        traverse(fn.rhs)(ctx.fresh.setLocalMode(firstClass)
+                                  .addEnclosingFunction(fn.symbol))
 
       case tree : ValDef =>
         if (isSafeDef(tree))
@@ -55,10 +74,12 @@ class EscapeCheck extends Phase {
         if (isSafeDef(tree))
           ()
         else
-          traverse(tree.rhs)(ctx.fresh.setLocalMode(firstClass).addBoundary(tree.symbol))
+          traverse(tree.rhs)(ctx.fresh.setLocalMode(firstClass)
+                                      .addEnclosingFunction(tree.symbol))
 
       case Assign(lhs, rhs) =>
-        traverseWithLocalMode(rhs, getClassiness(lhs))
+        traverseWithLocalMode(lhs, secondClass)
+        traverseWithLocalMode(rhs, firstClass)
 
       case Apply(fn, args) =>
         traverseWithLocalMode(fn, secondClass)
@@ -78,16 +99,15 @@ class EscapeCheck extends Phase {
         stats.foreach(traverseWithLocalMode(_, secondClass))
         traverse(expr)
 
-      // class definition
+      // Class definition
       case TypeDef(_, tmpl @ Template(_, _, _, _)) =>
         tmpl.body.foreach(traverseWithLocalMode(_,secondClass))
 
-      case Return(expr, from) =>
-        traverse(expr)
-        // Should we analyze the classiness of `from`?
+      case Return(expr, _) =>
+        traverseWithLocalMode(expr, firstClass)
 
       case If(cond, thenp, elsep) =>
-        traverseWithLocalMode(cond, firstClass)
+        traverseWithLocalMode(cond, secondClass)
         traverse(thenp)
         traverse(elsep)
 
@@ -114,9 +134,23 @@ class EscapeCheck extends Phase {
       case Select(qualifier, name) =>
         traverse(qualifier)
         // Todo: Should we check whether the name references a second class thing? I'd say yes!
+        if (isSecondClass(tree)) {
+          if (ctx.localMode.eq(firstClass))
+            ctx.error(em"Found local ${tree.symbol} in first class position.", tree.pos)
+          else {
+            for (s <- ctx.enclosingFunctions) {
+              if (!tree.symbol.denot.isContainedIn(s) && isFirstClass(s))
+                ctx.error(em"Found local ${tree.symbol} inside first class $s.", tree.pos)
+            }
+          }
 
+        }
+
+      /*
+       TODO: `import` itself does not change the classiness of something and just changes the namespace, right?
+       It seems to work that way at the moment. We should write a test for that
+        */
       case Import(expr, _) =>
-        // Todo: For some reason they used first class in scala-escape for this
         traverseWithLocalMode(expr, secondClass)
 
       case PackageDef(_, stats) =>
@@ -138,9 +172,10 @@ class EscapeCheck extends Phase {
         traverse(arg)
 
 
-      case _: This =>
+      case _: This => ()
       case _: New => ()
       case _: Literal => ()
+      case _: Closure => ()
       case EmptyTree => ()
 
       case _ =>
@@ -148,8 +183,9 @@ class EscapeCheck extends Phase {
         traverseChildren(tree)
     }
 
+    // TODO: I think we don't need this
     def traverseWithBoundary(tree: tpd.Tree, s: Symbol)(implicit ctx: Context): Unit= {
-      traverse(tree)(ctx.fresh.addBoundary(s))
+      traverse(tree)(ctx.fresh.addEnclosingFunction(s))
     }
 
     def traverseWithLocalMode(tree: tpd.Tree, classiness: Types.Type)(implicit ctx: Context): Unit= {
@@ -165,6 +201,10 @@ class EscapeCheck extends Phase {
 
   def isSecondClass(s: Symbol)(implicit ctx: Context) : Boolean =
     s.denot.flags.is(Flags.LocalMod)
+
+  def isFirstClass(s: Symbol)(implicit ctx: Context) : Boolean =
+    !isSecondClass(s)
+
 
   def getClassiness(tree: tpd.Tree)(implicit ctx: Context) : Type =
     if (isSecondClass(tree.symbol)) secondClass else firstClass

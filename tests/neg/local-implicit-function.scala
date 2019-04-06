@@ -14,7 +14,7 @@ object Test {
   // Try to store
   var incMut: Incrementor = Incrementor(42)
   def returnId(implicit ina: Incrementor): Incrementor = ina
-  def escape1(): Unit using Incrementor = implicitly[Incrementor] // TODO: should error
+  def escape1(): Unit using Incrementor = implicitly[Incrementor] // OK because implicitly inlines
   def escape2(): Unit using Incrementor = incMut = returnId // error
 
 
@@ -23,6 +23,7 @@ object Test {
   case class ExcCap(fn: Exception => Nothing)
   def trying[A](fn: implicit local ExcCap => A): Option[A] =
     Some(fn(ExcCap(x => return None)))
+  @scala.annotation.implicitNotFound("Missing a exception capability.")
   def throwing(e: Exception)(implicit local excCap: ExcCap) =
     excCap.fn(e)
   def runUnsafe[A](fn: implicit () => A) = fn()
