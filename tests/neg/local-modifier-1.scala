@@ -65,16 +65,23 @@ object Test {
   def escape0[A](local y: A) = y // error
   safe def escape[A](local y: A) = y // OK
 
-  // No currying for local
+  // No currying for second-class values
 
-  def f(local x: Int)(local g: local Int => Unit) = g(x)
-  // Misc
-  /*
-   These are big errors
-  def f10(g: local Int => Int) = g
-  f10(local (x:Int) => x) // OK
-  f10((x:Int) => x) // should be problem
+  def f10a(g: local Int => Unit)(local x: Int) = g(x) // OK
+  def f10b(local x: Int)(g: local Int => Unit) = g(x) // error
 
-  type T = local Int
-   */
+  def f11a
+    (x1: Int)
+    (local x2: Int) // error
+    (local x3: Int) // error
+    (local x4: Int) // OK
+    = 42
+
+  def f11b
+    (x1: Int)
+    (local x2: Int  // OK
+    ,      x3: Int  // OK
+    ,      x4: Int) // OK
+    = 42
+
 }

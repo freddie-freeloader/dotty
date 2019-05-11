@@ -72,10 +72,28 @@ class EscapeCheck extends Phase {
 
       case tree : DefDef =>
         if (isSafeDef(tree))
-          ()
-        else
-          traverse(tree.rhs)(ctx.fresh.setLocalMode(firstClass)
-                                      .addEnclosingFunction(tree.symbol))
+          return ()
+
+        /*
+          Currying does not work for second-class values.
+          Hence, second-class values can only be in the last argument position.
+          We check in the following whether a function definition respects that.
+         */
+        for {
+          (vparams, i) <- tree.vparamss.zipWithIndex
+          vparam <- vparams
+        } yield {
+          if (isSecondClass(vparam)
+              && (i + 1) < tree.vparamss.length) {
+            ctx.error(
+              em"Local parameters are only allowed to appear in the last parameter list."
+              , vparam.pos)
+          }
+        }
+
+        // Continue to traverse body of the function definition
+        traverse(tree.rhs)(ctx.fresh.setLocalMode(firstClass)
+          .addEnclosingFunction(tree.symbol))
 
       case Assign(lhs, rhs) =>
         traverseWithLocalMode(lhs, secondClass)
