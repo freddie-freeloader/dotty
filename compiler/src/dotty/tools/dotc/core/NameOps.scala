@@ -166,7 +166,9 @@ object NameOps {
 
     def functionArity: Int =
       functionArityFor(str.Function) max
-      functionArityFor(str.ImplicitFunction) max {
+      functionArityFor(str.ImplicitFunction) max
+      functionArityFor(str.LocalFunction) max
+      functionArityFor(str.LocalImplicitFunction) max {
         val n =
           functionArityFor(str.ErasedFunction) max
           functionArityFor(str.ErasedImplicitFunction)
@@ -181,7 +183,8 @@ object NameOps {
      */
     def isImplicitFunction: Boolean = {
       functionArityFor(str.ImplicitFunction) >= 0 ||
-      functionArityFor(str.ErasedImplicitFunction) > 0
+      functionArityFor(str.ErasedImplicitFunction) > 0 ||
+      functionArityFor(str.LocalImplicitFunction) >= 0
     }
 
     /** Is an erased function name, i.e. one of ErasedFunctionN, ErasedImplicitFunctionN for N > 0
@@ -189,6 +192,13 @@ object NameOps {
     def isErasedFunction: Boolean = {
       functionArityFor(str.ErasedFunction) > 0 ||
       functionArityFor(str.ErasedImplicitFunction) > 0
+    }
+
+    /** Is an local function name, i.e. one of LocalFunctionN, LocalImplicitFunctionN for N > 0
+      */
+    def isLocalFunction: Boolean = {
+      functionArityFor(str.LocalFunction) >= 0 ||
+      functionArityFor(str.LocalImplicitFunction) >= 0
     }
 
     /** Is a synthetic function name, i.e. one of
@@ -200,7 +210,8 @@ object NameOps {
     def isSyntheticFunction: Boolean = {
       functionArityFor(str.Function) > MaxImplementedFunctionArity ||
       functionArityFor(str.ImplicitFunction) >= 0 ||
-      isErasedFunction
+      isErasedFunction ||
+      isLocalFunction
     }
 
     /** Parsed function arity for function with some specific prefix */

@@ -215,7 +215,7 @@ object PickleBuffer {
       BYNAMEPARAM -> (Method, Covariant),
       LABEL -> (Label, Contravariant),
       ABSOVERRIDE -> AbsOverride,
-      LOCAL -> Local,
+      LOCAL -> LocalAccess,
       JAVA -> JavaDefined,
       SYNTHETIC -> Synthetic,
       STABLE -> Stable,

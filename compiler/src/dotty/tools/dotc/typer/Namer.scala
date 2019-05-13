@@ -127,13 +127,13 @@ trait NamerContextOps { this: Context =>
       termParamss
 
   /** The method type corresponding to given parameters and result type */
-  def methodType(typeParams: List[Symbol], valueParamss: List[List[Symbol]], resultType: Type, isJava: Boolean = false)(implicit ctx: Context): Type = {
+  def methodType(typeParams: List[Symbol], valueParamss: List[List[Symbol]], resultType: Type, isJava: Boolean = false, isLocal: Boolean = false)(implicit ctx: Context): Type = {
     val monotpe =
       (valueParamss :\ resultType) { (params, resultType) =>
-        val (isImplicit, isErased) =
-          if (params.isEmpty) (false, false)
-          else (params.head is Implicit, params.head is Erased)
-        val make = MethodType.maker(isJava, isImplicit, isErased)
+        val (isImplicit, isErased, isLocal) =
+          if (params.isEmpty) (false, false, false)
+          else (params.head is Implicit, params.head is Erased, params.head is LocalMod)
+        val make = MethodType.maker(isJava, isImplicit, isErased, isLocal)
         if (isJava)
           for (param <- params)
             if (param.info.isDirectRef(defn.ObjectClass)) param.info = defn.AnyType

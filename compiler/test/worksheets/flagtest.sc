@@ -10,7 +10,7 @@ object flagtest {
   val pripro = pri | pro                          //> pripro  : dotty.tools.dotc.core.Flags.FlagSet = private protected
   pripro is pri                                   //> res0: Boolean = true
   pripro is pro                                   //> res1: Boolean = true
-  pripro is Local                                 //> res2: Boolean = false
+  pripro is LocalAccess                                 //> res2: Boolean = false
   val pp = allOf(pri, pro)                        //> pp  : dotty.tools.dotc.core.Flags.FlagConjunction = private protected
   pripro is pp                                    //> res3: Boolean = true
   pri is pp                                       //> res4: Boolean = false

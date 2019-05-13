@@ -723,7 +723,7 @@ object SymDenotations {
         (  boundary.isTerm
         || boundary.isRoot
         || (accessWithin(boundary) || accessWithinLinked(boundary)) &&
-             (  !(this is Local)
+             (  !(this is LocalAccess)
              || (owner is ImplClass) // allow private local accesses to impl class members
              || isCorrectThisType(pre)
              ) &&

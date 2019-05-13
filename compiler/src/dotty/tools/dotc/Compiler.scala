@@ -7,6 +7,7 @@ import typer.{FrontEnd, RefChecks}
 import Phases.Phase
 import transform._
 import dotty.tools.backend.jvm.{CollectSuperCalls, GenBCode, LabelDefs}
+import dotty.tools.dotc.escapecheck.EscapeCheck
 import dotty.tools.dotc.transform.localopt.StringInterpolatorOpt
 
 /** The central class of the dotc compiler. The job of a compiler is to create
@@ -32,8 +33,7 @@ class Compiler {
    */
   def phases: List[List[Phase]] =
     frontendPhases :::
-    List(List(new DenoteSafeParams)) :::
-    List(List(new TestCheck)) :::
+    List(List(new EscapeCheck)) :::
     picklerPhases :::
     transformPhases :::
     backendPhases

@@ -751,7 +751,7 @@ object Parsers {
       def functionRest(params: List[Tree]): Tree =
         atPos(start, accept(ARROW)) {
           val t = typ()
-          if (imods.is(Implicit) || imods.is(Erased)) new FunctionWithMods(params, t, imods)
+          if (imods.is(Implicit) || imods.is(Erased) || imods.is(LocalMod)) new FunctionWithMods(params, t, imods)
           else Function(params, t)
         }
       def funArgTypesRest(first: Tree, following: () => Tree) = {
@@ -785,7 +785,7 @@ object Parsers {
             }
             openParens.change(LPAREN, -1)
             accept(RPAREN)
-            if (imods.is(Implicit) || isValParamList || in.token == ARROW) functionRest(ts)
+            if (imods.is(Implicit | Erased | LocalMod) || isValParamList || in.token == ARROW) functionRest(ts)
             else {
               val ts1 =
                 for (t <- ts) yield {
@@ -820,8 +820,8 @@ object Parsers {
         case MATCH => matchType(EmptyTree, t)
         case FORSOME => syntaxError(ExistentialTypesNoLongerSupported()); t
         case _ =>
-          if (imods.is(Implicit) && !t.isInstanceOf[FunctionWithMods])
-            syntaxError("Types with implicit keyword can only be function types", implicitKwPos(start))
+          if (imods.is(Implicit | Erased | LocalMod) && !t.isInstanceOf[FunctionWithMods])
+            syntaxError("Types with implicit, erased or local keyword can only be function types", implicitKwPos(start))
           t
       }
     }
@@ -1128,7 +1128,7 @@ object Parsers {
 
     def expr(location: Location.Value): Tree = {
       val start = in.offset
-      if (in.token == IMPLICIT || in.token == ERASED) {
+      if (in.token == IMPLICIT || in.token == ERASED || in.token == LOCAL) {
         val imods = modifiers(funArgMods)
         implicitClosure(start, location, imods)
       } else {
@@ -1739,6 +1739,8 @@ object Parsers {
       case FINAL       => Mod.Final()
       case IMPLICIT    => Mod.Implicit()
       case ERASED      => Mod.Erased()
+      case LOCAL       => Mod.Local()
+      case SAFE        => Mod.Safe()
       case LAZY        => Mod.Lazy()
       case OVERRIDE    => Mod.Override()
       case PRIVATE     => Mod.Private()
@@ -1794,10 +1796,10 @@ object Parsers {
      */
     def accessQualifierOpt(mods: Modifiers): Modifiers =
       if (in.token == LBRACKET) {
-        if ((mods is Local) || mods.hasPrivateWithin)
+        if ((mods is LocalAccess) || mods.hasPrivateWithin)
           syntaxError(DuplicatePrivateProtectedQualifier())
         inBrackets {
-          if (in.token == THIS) { in.nextToken(); mods | Local }
+          if (in.token == THIS) { in.nextToken(); mods | LocalAccess }
           else mods.withPrivateWithin(ident().toTypeName)
         }
       } else mods
@@ -1829,9 +1831,9 @@ object Parsers {
       normalize(loop(start))
     }
 
-    /** FunArgMods ::= { `implicit` | `erased` }
+    /** FunArgMods ::= { `implicit` | `erased` | `local` }
      */
-    def funArgMods: BitSet = BitSet(IMPLICIT, ERASED)
+    def funArgMods: BitSet = BitSet(IMPLICIT, ERASED, LOCAL)
 
     /** Wrap annotation or constructor in New(...).<init> */
     def wrapNew(tpt: Tree): Select = Select(New(tpt), nme.CONSTRUCTOR)
@@ -1962,7 +1964,7 @@ object Parsers {
         atPos(start, nameStart) {
           val name = ident()
           accept(COLON)
-          if (in.token == ARROW && owner.isTypeName && !(mods is Local))
+          if (in.token == ARROW && owner.isTypeName && !(mods is LocalAccess))
             syntaxError(VarValParametersMayNotBeCallByName(name, mods is Mutable))
           val tpt = paramType()
           val default =
@@ -1986,6 +1988,9 @@ object Parsers {
               funArgMods()
             } else if (in.token == ERASED) {
               imods = addMod(imods, atPos(accept(ERASED)) { Mod.Erased() })
+              funArgMods()
+            } else if (in.token == LOCAL) {
+              imods = addMod(imods, atPos(accept(LOCAL)) { Mod.Local() })
               funArgMods()
             }
           }
@@ -2606,7 +2611,7 @@ object Parsers {
         else if (isExprIntro)
           stats += expr(Location.InBlock)
         else if (isDefIntro(localModifierTokens))
-          if (in.token == IMPLICIT || in.token == ERASED) {
+          if (in.token == IMPLICIT || in.token == ERASED || in.token == LOCAL) {
             val start = in.offset
             var imods = modifiers(funArgMods)
             if (isBindingIntro && !isIdent(nme.INLINEkw))

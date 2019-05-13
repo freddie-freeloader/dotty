@@ -54,8 +54,8 @@ trait StandardDefinitions extends scala.tasty.reflect.StandardDefinitions {
     def SomeModule: Symbol = defn.SomeClass.companionModule.asTerm
 
     def ProductClass: Symbol = defn.ProductClass
-    def FunctionClass(arity: Int, isImplicit: Boolean = false, isErased: Boolean = false): Symbol =
-      defn.FunctionClass(arity, isImplicit, isErased).asClass
+    def FunctionClass(arity: Int, isImplicit: Boolean = false, isErased: Boolean = false, isLocal: Boolean = false): Symbol =
+      defn.FunctionClass(arity, isImplicit, isErased, isLocal).asClass
     def TupleClass(arity: Int): Symbol = defn.TupleType(arity).classSymbol.asClass
 
     def ScalaPrimitiveValueClasses: List[Symbol] =
